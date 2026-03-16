@@ -23,12 +23,21 @@ const AdminAttributes: React.FC = () => {
     try {
       setLoading(true);
       setError(null);
-      const data = await attributeService.getAllAttributesPaged(page, 10);
-      setAttributes(data.content);
-      setTotalPages(data.totalPages);
-      setCurrentPage(data.page);
+      try {
+        const data = await attributeService.getAllAttributesPaged(page, 10);
+        setAttributes(data.content);
+        setTotalPages(data.totalPages);
+        setCurrentPage(data.number);
+      } catch {
+        const all = await attributeService.getAllAttributes();
+        const size = 10;
+        const start = page * size;
+        setAttributes(all.slice(start, start + size));
+        setTotalPages(Math.ceil(all.length / size));
+        setCurrentPage(page);
+      }
     } catch (err: any) {
-      setError(err.message || 'Failed to load attributes');
+      setError(err.message || 'Không thể tải danh sách thuộc tính');
       console.error('Error fetching attributes:', err);
     } finally {
       setLoading(false);

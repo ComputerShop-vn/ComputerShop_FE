@@ -4,7 +4,9 @@ import { API_ENDPOINTS } from '../config';
 import { PagedResponse } from '../types/common';
 import { 
   InstallmentPackageResponse, 
-  InstallmentPackageRequest 
+  InstallmentPackageRequest,
+  InstallmentCalculateRequest,
+  InstallmentPreviewResponse,
 } from '../types/installment';
 
 export const installmentService = {
@@ -67,6 +69,17 @@ export const installmentService = {
   // Delete installment package (requires STAFF/ADMIN)
   deletePackage: async (id: number): Promise<void> => {
     await apiClient.delete(API_ENDPOINTS.INSTALLMENT_PACKAGE_BY_ID(id), true);
+  },
+
+  // Calculate installment preview
+  calculatePreview: async (data: InstallmentCalculateRequest): Promise<InstallmentPreviewResponse> => {
+    const response = await apiClient.post<InstallmentPreviewResponse>(
+      API_ENDPOINTS.INSTALLMENT_CALCULATE,
+      data,
+      true
+    );
+    if (!response.result) throw new Error('Failed to calculate installment');
+    return response.result;
   },
 };
 

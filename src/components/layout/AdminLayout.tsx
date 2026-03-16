@@ -69,7 +69,6 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children, title, subtitle, ac
 
   const adminNavItems = [
     { path: `/admin/users`, label: 'Người Dùng', icon: 'group' },
-    { path: `/admin/roles`, label: 'Roles', icon: 'badge' },
   ];
 
   return (

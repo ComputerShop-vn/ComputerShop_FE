@@ -19,12 +19,21 @@ const AdminRoles: React.FC = () => {
     try {
       setLoading(true);
       setError(null);
-      const data = await roleService.getAllRolesPaged(page, 10);
-      setRoles(data.content);
-      setTotalPages(data.totalPages);
-      setCurrentPage(data.page);
+      try {
+        const data = await roleService.getAllRolesPaged(page, 10);
+        setRoles(data.content);
+        setTotalPages(data.totalPages);
+        setCurrentPage(data.number);
+      } catch {
+        const all = await roleService.getAllRoles();
+        const size = 10;
+        const start = page * size;
+        setRoles(all.slice(start, start + size));
+        setTotalPages(Math.ceil(all.length / size));
+        setCurrentPage(page);
+      }
     } catch (err: any) {
-      setError(err.message || 'Failed to load roles');
+      setError(err.message || 'Không thể tải danh sách vai trò');
       console.error('Error fetching roles:', err);
     } finally {
       setLoading(false);

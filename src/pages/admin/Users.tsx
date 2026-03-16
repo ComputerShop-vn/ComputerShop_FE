@@ -28,11 +28,20 @@ const AdminUsers: React.FC = () => {
     try {
       setLoading(true);
       setError(null);
-      const data = await userService.getAllUsersPaged({ page, size: PAGE_SIZE });
-      setPagedData(data);
-      setUsers(data.content);
+      try {
+        const data = await userService.getAllUsersPaged({ page, size: PAGE_SIZE });
+        setPagedData(data);
+        setUsers(data.content);
+        setCurrentPage(data.number);
+      } catch {
+        const all = await userService.getAllUsers();
+        const start = page * PAGE_SIZE;
+        setUsers(all.slice(start, start + PAGE_SIZE));
+        setPagedData({ content: all.slice(start, start + PAGE_SIZE), totalPages: Math.ceil(all.length / PAGE_SIZE), totalElements: all.length, number: page, size: PAGE_SIZE } as any);
+        setCurrentPage(page);
+      }
     } catch (err: any) {
-      setError(err.message || 'Failed to load users');
+      setError(err.message || 'Không thể tải danh sách người dùng');
     } finally {
       setLoading(false);
     }

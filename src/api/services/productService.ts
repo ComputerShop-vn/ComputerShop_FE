@@ -87,7 +87,7 @@ export const productService = {
     }
 
     const token = localStorage.getItem('authToken');
-    const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080';
+    const apiBaseUrl = import.meta.env.DEV ? '' : (import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080');
     const response = await fetch(`${apiBaseUrl}${API_ENDPOINTS.PRODUCTS}`, {
       method: 'POST',
       headers: {
@@ -122,7 +122,7 @@ export const productService = {
     }
 
     const token = localStorage.getItem('authToken');
-    const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080';
+    const apiBaseUrl = import.meta.env.DEV ? '' : (import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080');
     const response = await fetch(`${apiBaseUrl}${API_ENDPOINTS.PRODUCT_BY_ID(id)}`, {
       method: 'PUT',
       headers: {
