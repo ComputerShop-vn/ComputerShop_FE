@@ -36,6 +36,7 @@ import OrderList from './src/pages/Orders/OrderList';
 import OrderDetail from './src/pages/Orders/OrderDetail';
 import WarrantyLookup from './src/pages/Warranty/WarrantyLookup';
 import PaymentCallback from './src/pages/PaymentCallback';
+import Profile from './src/pages/Profile/Profile';
 
 const App: React.FC = () => {
   return (
@@ -96,6 +97,7 @@ const App: React.FC = () => {
                       <Route path="/orders" element={<OrderList />} />
                       <Route path="/orders/:id" element={<OrderDetail />} />
                       <Route path="/warranty" element={<WarrantyLookup />} />
+                      <Route path="/profile" element={<Profile />} />
                       <Route path="/payment-callback" element={<PaymentCallback />} />
                       <Route path="/payment-success" element={<PaymentCallback />} />
                       <Route path="/payment-failed" element={<PaymentCallback />} />

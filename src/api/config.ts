@@ -21,6 +21,9 @@ export const API_ENDPOINTS = {
   CATEGORIES: `${API_VERSION}/categories`,
   CATEGORIES_PAGED: `${API_VERSION}/categories/paged`,
   CATEGORY_BY_ID: (id: number) => `${API_VERSION}/categories/${id}`,
+  CATEGORIES_TREE: `${API_VERSION}/categories/tree`,
+  CATEGORIES_PARENTS: `${API_VERSION}/categories/parents`,
+  CATEGORIES_CHILDREN: (id: number) => `${API_VERSION}/categories/${id}/children`,
   
   // Brands (to be implemented)
   BRANDS: `${API_VERSION}/brands`,

@@ -2,7 +2,7 @@
 import { apiClient } from '../client';
 import { API_ENDPOINTS } from '../config';
 import { PagedResponse } from '../types/common';
-import { CategoryResponse, CategoryRequest } from '../types/category';
+import { CategoryResponse, CategoryRequest, CategoryTreeNode } from '../types/category';
 
 export const categoryService = {
   // Get all categories (public)
@@ -61,6 +61,24 @@ export const categoryService = {
   // Delete category (requires STAFF/ADMIN)
   deleteCategory: async (id: number): Promise<void> => {
     await apiClient.delete(API_ENDPOINTS.CATEGORY_BY_ID(id), true);
+  },
+
+  // Get category tree (parent → children hierarchy)
+  getCategoryTree: async (): Promise<CategoryTreeNode[]> => {
+    const response = await apiClient.get<CategoryTreeNode[]>(API_ENDPOINTS.CATEGORIES_TREE);
+    return response.result || [];
+  },
+
+  // Get only parent categories
+  getParentCategories: async (): Promise<CategoryTreeNode[]> => {
+    const response = await apiClient.get<CategoryTreeNode[]>(API_ENDPOINTS.CATEGORIES_PARENTS);
+    return response.result || [];
+  },
+
+  // Get children of a category
+  getChildren: async (id: number): Promise<CategoryTreeNode[]> => {
+    const response = await apiClient.get<CategoryTreeNode[]>(API_ENDPOINTS.CATEGORIES_CHILDREN(id));
+    return response.result || [];
   },
 };
 
