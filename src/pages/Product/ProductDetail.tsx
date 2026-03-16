@@ -45,14 +45,18 @@ const ProductDetail: React.FC = () => {
       .catch(() => {});
   }, [product]);
 
-  const handleAddToCart = () => {
+  const handleAddToCart = async () => {
     if (!isAuthenticated) {
       alert('Vui lòng đăng nhập để thêm vào giỏ hàng.');
       navigate('/login');
       return;
     }
     if (!product) return;
-    // Map to cart-compatible shape
+    const variantId = selectedVariant?.variantId;
+    if (!variantId) {
+      alert('Vui lòng chọn phiên bản sản phẩm.');
+      return;
+    }
     const cartItem: any = {
       id: String(product.productId),
       name: product.name,
@@ -61,23 +65,29 @@ const ProductDetail: React.FC = () => {
       image: product.thumbnailUrl || '',
       brand: product.brandName || '',
       category: product.categoryName || '',
-      variants: product.variants,
-      variantId: selectedVariant?.variantId,
-      variantName: selectedVariant?.variantName,
     };
-    for (let i = 0; i < quantity; i++) addToCart(cartItem);
-    if (window.confirm('Đã thêm vào giỏ hàng! Bạn có muốn xem giỏ hàng ngay không?')) {
-      navigate('/cart');
+    try {
+      for (let i = 0; i < quantity; i++) await addToCart(cartItem, variantId);
+      if (window.confirm('Đã thêm vào giỏ hàng! Bạn có muốn xem giỏ hàng ngay không?')) {
+        navigate('/cart');
+      }
+    } catch {
+      // error already handled in CartContext
     }
   };
 
-  const handleBuyNow = () => {
+  const handleBuyNow = async () => {
     if (!isAuthenticated) {
       alert('Vui lòng đăng nhập để mua hàng.');
       navigate('/login');
       return;
     }
     if (!product) return;
+    const variantId = selectedVariant?.variantId;
+    if (!variantId) {
+      alert('Vui lòng chọn phiên bản sản phẩm.');
+      return;
+    }
     const cartItem: any = {
       id: String(product.productId),
       name: product.name,
@@ -86,12 +96,13 @@ const ProductDetail: React.FC = () => {
       image: product.thumbnailUrl || '',
       brand: product.brandName || '',
       category: product.categoryName || '',
-      variants: product.variants,
-      variantId: selectedVariant?.variantId,
-      variantName: selectedVariant?.variantName,
     };
-    addToCart(cartItem);
-    navigate('/checkout');
+    try {
+      await addToCart(cartItem, variantId);
+      navigate('/checkout');
+    } catch {
+      // error already handled in CartContext
+    }
   };
 
   if (loading) {
@@ -111,11 +122,12 @@ const ProductDetail: React.FC = () => {
     );
   }
 
-  const hasDiscount = !!product.discountedPrice;
-  const displayPrice = product.discountedPrice ?? product.basePrice;
-  // Use selected variant price if available
-  const variantPrice = selectedVariant?.price ?? displayPrice;
-  const variantBasePrice = hasDiscount ? product.basePrice : undefined;
+  const hasDiscount = !!product.discountedPrice && product.discountedPrice < product.basePrice;
+  // Variant price is always the base price of that variant
+  // Apply discount ratio from product level onto the selected variant price
+  const variantBasePrice = selectedVariant?.price ?? product.basePrice;
+  const discountRatio = hasDiscount ? product.discountedPrice! / product.basePrice : 1;
+  const variantPrice = hasDiscount ? Math.round(variantBasePrice * discountRatio) : variantBasePrice;
 
   // Collect all images
   const images = [
@@ -188,7 +200,7 @@ const ProductDetail: React.FC = () => {
               <p className="text-3xl font-bold text-gray-900">
                 ${variantPrice.toLocaleString()}
               </p>
-              {variantBasePrice && (
+              {hasDiscount && (
                 <p className="text-sm text-red-500 line-through">
                   ${variantBasePrice.toLocaleString()}
                 </p>
