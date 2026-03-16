@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 
 declare global {
@@ -27,7 +27,11 @@ const Login: React.FC = () => {
   const [googleLoading, setGoogleLoading] = useState(false);
   const googleBtnRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
+  const location = useLocation();
   const { login, loginWithGoogle } = useAuth();
+
+  const registeredSuccess = (location.state as any)?.registered === true;
+  const passwordResetSuccess = (location.state as any)?.passwordReset === true;
 
   const navigateByRole = (token: string) => {
     try {
@@ -139,7 +143,18 @@ const Login: React.FC = () => {
               </div>
 
               <form className="space-y-6" onSubmit={handleLogin}>
+                {registeredSuccess && (
+                  <p className="text-xs text-green-700 font-bold bg-green-50 dark:bg-green-900/20 p-3 rounded">
+                    Đăng ký thành công! Vui lòng đăng nhập.
+                  </p>
+                )}
+                {passwordResetSuccess && (
+                  <p className="text-xs text-green-700 font-bold bg-green-50 dark:bg-green-900/20 p-3 rounded">
+                    Đặt lại mật khẩu thành công! Vui lòng đăng nhập.
+                  </p>
+                )}
                 {error && <p className="text-xs text-red-500 font-bold bg-red-50 dark:bg-red-900/20 p-3 rounded">{error}</p>}
+
                 <div className="space-y-2">
                   <label className="block text-[10px] font-bold uppercase tracking-widest text-gray-400">EMAIL</label>
                   <input
@@ -151,7 +166,9 @@ const Login: React.FC = () => {
                 <div className="space-y-2">
                   <div className="flex justify-between items-center">
                     <label className="block text-[10px] font-bold uppercase tracking-widest text-gray-400">MẬT KHẨU</label>
-                    <a href="#" className="text-[10px] font-bold text-gray-400 hover:text-black dark:hover:text-white transition uppercase tracking-widest">Quên mật khẩu?</a>
+                    <Link to="/forgot-password" className="text-[10px] font-bold text-gray-400 hover:text-black dark:hover:text-white transition uppercase tracking-widest">
+                      Quên mật khẩu?
+                    </Link>
                   </div>
                   <input
                     type="password" value={password} onChange={(e) => setPassword(e.target.value)}

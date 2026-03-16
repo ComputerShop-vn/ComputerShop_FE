@@ -3,53 +3,51 @@ import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { otpService } from '../../api/services/otpService';
 import { userService } from '../../api/services/userService';
 
+interface LocationState {
+  email: string;
+  mode?: 'register' | 'forgot'; // default = register
+  registerData?: {
+    username: string;
+    email: string;
+    password: string;
+    fullName?: string;
+    phoneNumber?: string;
+  };
+}
+
 const OtpVerification: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const state = location.state as {
-    email: string;
-    registerData: {
-      username: string;
-      email: string;
-      password: string;
-      fullName?: string;
-      phoneNumber?: string;
-    };
-  } | null;
+  const state = location.state as LocationState | null;
+  const isForgot = state?.mode === 'forgot';
 
   const [otp, setOtp] = useState(['', '', '', '', '', '']);
   const [loading, setLoading] = useState(false);
   const [resending, setResending] = useState(false);
   const [error, setError] = useState('');
-  const [countdown, setCountdown] = useState(120); // 2 phút như BE config
+  const [countdown, setCountdown] = useState(120);
   const [isDarkMode, setIsDarkMode] = useState(false);
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
-  // Redirect nếu không có state (truy cập trực tiếp)
   useEffect(() => {
     if (!state?.email) {
-      navigate('/register');
+      navigate(isForgot ? '/forgot-password' : '/register');
     }
-  }, [state, navigate]);
+  }, [state, navigate, isForgot]);
 
-  // Đếm ngược thời gian OTP
   useEffect(() => {
     if (countdown <= 0) return;
-    const timer = setInterval(() => setCountdown((c) => c - 1), 1000);
+    const timer = setInterval(() => setCountdown((c: number) => c - 1), 1000);
     return () => clearInterval(timer);
   }, [countdown]);
 
   const handleChange = (index: number, value: string) => {
-    if (!/^\d*$/.test(value)) return; // chỉ nhận số
+    if (!/^\d*$/.test(value)) return;
     const newOtp = [...otp];
-    newOtp[index] = value.slice(-1); // chỉ lấy 1 ký tự
+    newOtp[index] = value.slice(-1);
     setOtp(newOtp);
     setError('');
-
-    // Auto focus ô tiếp theo
-    if (value && index < 5) {
-      inputRefs.current[index + 1]?.focus();
-    }
+    if (value && index < 5) inputRefs.current[index + 1]?.focus();
   };
 
   const handleKeyDown = (index: number, e: React.KeyboardEvent) => {
@@ -70,24 +68,22 @@ const OtpVerification: React.FC = () => {
   const handleVerify = async (e: React.FormEvent) => {
     e.preventDefault();
     const otpCode = otp.join('');
-    if (otpCode.length < 6) {
-      setError('Vui lòng nhập đủ 6 chữ số OTP');
-      return;
-    }
+    if (otpCode.length < 6) { setError('Vui lòng nhập đủ 6 chữ số OTP'); return; }
 
     setLoading(true);
     setError('');
-
     try {
-      // 1. Xác thực OTP
       await otpService.verifyOtp(state!.email, otpCode);
 
-      // 2. Tạo tài khoản sau khi OTP hợp lệ
-      await userService.createUser(state!.registerData);
-
-      navigate('/login', { state: { registered: true } });
+      if (isForgot) {
+        // Forgot password: navigate sang trang đặt lại mật khẩu
+        navigate('/reset-password', { state: { email: state!.email } });
+      } else {
+        // Register: tạo tài khoản rồi về login
+        await userService.createUser(state!.registerData!);
+        navigate('/login', { state: { registered: true } });
+      }
     } catch (err: any) {
-      console.error('OTP verify error:', err);
       setError(err.message || 'OTP không đúng hoặc đã hết hạn. Vui lòng thử lại.');
     } finally {
       setLoading(false);
@@ -133,7 +129,6 @@ const OtpVerification: React.FC = () => {
       {/* Main */}
       <main className="flex-grow flex items-center justify-center py-16 px-4">
         <div className="max-w-md w-full bg-white dark:bg-zinc-900 p-8 md:p-10 shadow-2xl border border-gray-100 dark:border-zinc-800">
-          {/* Icon */}
           <div className="flex justify-center mb-6">
             <div className="w-16 h-16 rounded-full bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center">
               <span className="material-symbols-outlined text-3xl text-zinc-700 dark:text-zinc-300">mark_email_read</span>
@@ -144,9 +139,7 @@ const OtpVerification: React.FC = () => {
             <h2 className="text-2xl font-light text-zinc-900 dark:text-white uppercase tracking-wide">
               Xác Thực <span className="font-bold">Email</span>
             </h2>
-            <p className="text-sm text-gray-500 dark:text-gray-400">
-              Mã OTP đã được gửi đến
-            </p>
+            <p className="text-sm text-gray-500 dark:text-gray-400">Mã OTP đã được gửi đến</p>
             <p className="text-sm font-semibold text-zinc-800 dark:text-zinc-200">{state.email}</p>
           </div>
 
@@ -157,25 +150,23 @@ const OtpVerification: React.FC = () => {
               </div>
             )}
 
-            {/* OTP Input boxes */}
             <div className="flex justify-center gap-3" onPaste={handlePaste}>
-              {otp.map((digit, index) => (
+              {otp.map((digit: string, index: number) => (
                 <input
                   key={index}
-                  ref={(el) => { inputRefs.current[index] = el; }}
+                  ref={(el: HTMLInputElement | null) => { inputRefs.current[index] = el; }}
                   type="text"
                   inputMode="numeric"
                   maxLength={1}
                   value={digit}
-                  onChange={(e) => handleChange(index, e.target.value)}
-                  onKeyDown={(e) => handleKeyDown(index, e)}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleChange(index, e.target.value)}
+                  onKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => handleKeyDown(index, e)}
                   className="w-12 h-14 text-center text-xl font-bold border-2 border-gray-200 dark:border-zinc-700 bg-transparent focus:border-black dark:focus:border-white outline-none transition dark:text-white rounded-md"
                   autoFocus={index === 0}
                 />
               ))}
             </div>
 
-            {/* Countdown */}
             <div className="text-center text-sm text-gray-500 dark:text-gray-400">
               {countdown > 0 ? (
                 <span>Mã hết hạn sau <span className="font-bold text-zinc-800 dark:text-zinc-200">{formatCountdown(countdown)}</span></span>
@@ -191,13 +182,14 @@ const OtpVerification: React.FC = () => {
             >
               {loading ? (
                 <><span className="animate-spin mr-2">⏳</span>ĐANG XÁC THỰC...</>
+              ) : isForgot ? (
+                'XÁC THỰC'
               ) : (
                 'XÁC THỰC & ĐĂNG KÝ'
               )}
             </button>
           </form>
 
-          {/* Resend */}
           <div className="mt-6 text-center">
             <p className="text-xs text-gray-500 dark:text-gray-400">
               Không nhận được mã?{' '}
@@ -212,9 +204,12 @@ const OtpVerification: React.FC = () => {
           </div>
 
           <div className="mt-6 text-center">
-            <Link to="/register" className="inline-flex items-center text-[10px] font-bold text-gray-400 uppercase tracking-widest hover:text-black dark:hover:text-white transition group">
+            <Link
+              to={isForgot ? '/forgot-password' : '/register'}
+              className="inline-flex items-center text-[10px] font-bold text-gray-400 uppercase tracking-widest hover:text-black dark:hover:text-white transition group"
+            >
               <span className="material-symbols-outlined text-sm mr-2 group-hover:-translate-x-1 transition-transform">arrow_back</span>
-              QUAY LẠI ĐĂNG KÝ
+              {isForgot ? 'QUAY LẠI QUÊN MẬT KHẨU' : 'QUAY LẠI ĐĂNG KÝ'}
             </Link>
           </div>
         </div>

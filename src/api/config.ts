@@ -108,6 +108,9 @@ export const API_ENDPOINTS = {
   // OTP Verification
   OTP_SEND: `${API_VERSION}/otp-verification/send-otp`,
   OTP_VERIFY: `${API_VERSION}/otp-verification/verify-otp`,
+
+  // Forgot Password
+  FORGOT_PASSWORD_RESET: (email: string) => `${API_VERSION}/forgot-password/reset/${email}`,
 } as const;
 
 // HTTP Methods
