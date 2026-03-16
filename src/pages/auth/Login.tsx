@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 
@@ -39,7 +39,7 @@ const Login: React.FC = () => {
     }
   };
 
-  const handleGoogleCredential = async (credential: string) => {
+  const handleGoogleCredential = useCallback(async (credential: string) => {
     setGoogleLoading(true);
     setError('');
     try {
@@ -51,7 +51,7 @@ const Login: React.FC = () => {
     } finally {
       setGoogleLoading(false);
     }
-  };
+  }, [loginWithGoogle]);
 
   useEffect(() => {
     if (!GOOGLE_CLIENT_ID) return;
@@ -78,7 +78,7 @@ const Login: React.FC = () => {
       }, 100);
       return () => clearInterval(interval);
     }
-  }, []);
+  }, [handleGoogleCredential]);
 
   const toggleDarkMode = () => {
     setIsDarkMode(!isDarkMode);
