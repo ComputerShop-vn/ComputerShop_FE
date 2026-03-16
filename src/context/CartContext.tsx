@@ -34,6 +34,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
         cartItemId: item.cartItemId,
         name: item.productName || item.variantName || 'Unknown Product',
         price: effectivePrice,
+        originalPrice: item.discountedPrice ? item.price : undefined,
         discountedPrice: item.discountedPrice,
         quantity: item.quantity,
         image: item.thumbnailUrl || item.imageUrl || '/placeholder.png',
