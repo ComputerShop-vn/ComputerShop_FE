@@ -23,10 +23,12 @@ export interface OrderItemResponse {
 
 export interface PaymentScheduleResponse {
   scheduleId: number;
+  installmentNo?: number;
   dueDate: string;
   amount: number;
   status: string; // PENDING, UNPAID, PAID, OVERDUE
   paidDate?: string;
+  vnpTransactionNo?: string;
 }
 
 export interface OrderResponse {

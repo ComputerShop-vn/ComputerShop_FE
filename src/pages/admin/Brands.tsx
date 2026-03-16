@@ -33,12 +33,22 @@ const AdminBrands: React.FC = () => {
     try {
       setLoading(true);
       setError(null);
-      const data = await brandService.getAllBrandsPaged(page, 10);
-      setBrands(data.content);
-      setTotalPages(data.totalPages);
-      setCurrentPage(data.page);
+      try {
+        const data = await brandService.getAllBrandsPaged(page, 10);
+        setBrands(data.content);
+        setTotalPages(data.totalPages);
+        setCurrentPage(data.page);
+      } catch {
+        // Fallback: backend /brands/paged route conflicts with /brands/{id}
+        const all = await brandService.getAllBrands();
+        const size = 10;
+        const start = page * size;
+        setBrands(all.slice(start, start + size));
+        setTotalPages(Math.ceil(all.length / size));
+        setCurrentPage(page);
+      }
     } catch (err: any) {
-      setError(err.message || 'Failed to load brands');
+      setError(err.message || 'Không thể tải danh sách thương hiệu');
       console.error('Error fetching brands:', err);
     } finally {
       setLoading(false);

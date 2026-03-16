@@ -31,11 +31,25 @@ const AdminOrders: React.FC = () => {
     try {
       setLoading(true);
       setError(null);
-      const data = await orderService.getAllOrdersPaged({ page, size: PAGE_SIZE });
-      setPagedData(data);
-      setOrders(data.content);
+      try {
+        const data = await orderService.getAllOrdersPaged({ page, size: PAGE_SIZE });
+        setPagedData(data);
+        setOrders(data.content);
+      } catch {
+        const all = await orderService.getAllOrders();
+        const start = page * PAGE_SIZE;
+        const content = all.slice(start, start + PAGE_SIZE);
+        setOrders(content);
+        setPagedData({
+          content,
+          page,
+          size: PAGE_SIZE,
+          totalElements: all.length,
+          totalPages: Math.ceil(all.length / PAGE_SIZE),
+        });
+      }
     } catch (err: any) {
-      setError(err.message || 'Failed to load orders');
+      setError(err.message || 'Không thể tải danh sách đơn hàng');
     } finally {
       setLoading(false);
     }

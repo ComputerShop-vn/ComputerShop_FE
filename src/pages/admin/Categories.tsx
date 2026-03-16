@@ -19,12 +19,21 @@ const AdminCategories: React.FC = () => {
     try {
       setLoading(true);
       setError(null);
-      const data = await categoryService.getAllCategoriesPaged(page, 10);
-      setCategories(data.content);
-      setTotalPages(data.totalPages);
-      setCurrentPage(data.page);
+      try {
+        const data = await categoryService.getAllCategoriesPaged(page, 10);
+        setCategories(data.content);
+        setTotalPages(data.totalPages);
+        setCurrentPage(data.page);
+      } catch {
+        const all = await categoryService.getAllCategories();
+        const size = 10;
+        const start = page * size;
+        setCategories(all.slice(start, start + size));
+        setTotalPages(Math.ceil(all.length / size));
+        setCurrentPage(page);
+      }
     } catch (err: any) {
-      setError(err.message || 'Failed to load categories');
+      setError(err.message || 'Không thể tải danh sách danh mục');
       console.error('Error fetching categories:', err);
     } finally {
       setLoading(false);

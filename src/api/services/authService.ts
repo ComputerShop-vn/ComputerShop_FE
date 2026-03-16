@@ -157,6 +157,24 @@ export const authService = {
     }
   },
 
+  // Google login with ID token credential
+  googleLogin: async (idToken: string): Promise<AuthenticationResponse> => {
+    const response = await apiClient.post<AuthenticationResponse>(
+      API_ENDPOINTS.AUTH_GOOGLE,
+      { token: idToken }
+    );
+    if (!response.result) {
+      throw new Error('Google login failed - no result in response');
+    }
+    if (response.result.token) {
+      localStorage.setItem('authToken', response.result.token);
+    }
+    if (response.result.refreshToken) {
+      localStorage.setItem('refreshToken', response.result.refreshToken);
+    }
+    return response.result;
+  },
+
   // Check if user is authenticated
   isAuthenticated: (): boolean => {
     return !!localStorage.getItem('authToken');

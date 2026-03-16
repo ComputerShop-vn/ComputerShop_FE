@@ -32,7 +32,15 @@ const OrderList: React.FC = () => {
     setLoading(true);
     orderService.getMyOrdersPaged({ page: currentPage, size: PAGE_SIZE })
       .then(data => { setPagedData(data); setOrders(data.content); })
-      .catch(() => setError('Không thể tải danh sách đơn hàng.'))
+      .catch(() => {
+        // fallback to non-paged
+        orderService.getMyOrders()
+          .then(data => {
+            setOrders(data);
+            setPagedData({ content: data, totalElements: data.length, totalPages: 1, size: data.length, number: 0 });
+          })
+          .catch(() => setError('Không thể tải danh sách đơn hàng.'));
+      })
       .finally(() => setLoading(false));
   }, [user, navigate, currentPage]);
 

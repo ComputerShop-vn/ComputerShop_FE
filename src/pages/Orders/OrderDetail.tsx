@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { orderService } from '../../api/services/orderService';
+import { paymentService } from '../../api/services/paymentService';
 import { OrderResponse } from '../../api/types/order';
 
 const statusLabel: Record<string, { label: string; color: string }> = {
@@ -50,15 +51,12 @@ const OrderDetail: React.FC = () => {
     if (!order) return;
     setPayingNext(true);
     try {
-      // Giả lập thanh toán thành công — reload lại đơn hàng để cập nhật lịch
-      await new Promise(res => setTimeout(res, 1000)); // giả lập delay
-      alert('Thanh toán kỳ này thành công! (Giả lập)');
-      // Reload order để cập nhật trạng thái
-      const updated = await orderService.getOrderById(order.orderId);
-      setOrder(updated);
+      const payment = await paymentService.createPayment(order.orderId);
+      if (!payment.paymentUrl) throw new Error('Không nhận được link thanh toán.');
+      paymentService.redirectToPayment(payment.paymentUrl);
     } catch (err: any) {
-      alert(err.message || 'Không thể thanh toán. Vui lòng thử lại.');
-    } finally {
+      console.error('Payment error:', err);
+      alert(err.message || 'Không thể tạo link thanh toán. Vui lòng thử lại.');
       setPayingNext(false);
     }
   };

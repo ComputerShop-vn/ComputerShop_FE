@@ -11,6 +11,7 @@ interface User {
 interface AuthContextType {
   user: User | null;
   login: (email: string, password: string) => Promise<void>;
+  loginWithGoogle: (idToken: string) => Promise<void>;
   logout: () => Promise<void>;
   isAuthenticated: boolean;
   loading: boolean;
@@ -101,8 +102,33 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  const loginWithGoogle = async (idToken: string) => {
+    try {
+      const response = await authService.googleLogin(idToken);
+      if (response.token) {
+        const userInfo = await authService.getCurrentUser();
+        if (userInfo) {
+          let mappedRole: 'admin' | 'staff' | 'user' = 'user';
+          const backendRole = userInfo.role?.toUpperCase();
+          if (backendRole === 'ADMIN') mappedRole = 'admin';
+          else if (backendRole === 'STAFF') mappedRole = 'staff';
+          setUser({
+            email: userInfo.email,
+            role: mappedRole,
+            name: userInfo.name || userInfo.email.split('@')[0],
+          });
+          return;
+        }
+      }
+      throw new Error('Google login failed');
+    } catch (error) {
+      console.error('Google login error:', error);
+      throw error;
+    }
+  };
+
   return (
-    <AuthContext.Provider value={{ user, login, logout, isAuthenticated: !!user, loading }}>
+    <AuthContext.Provider value={{ user, login, loginWithGoogle, logout, isAuthenticated: !!user, loading }}>
       {children}
     </AuthContext.Provider>
   );

@@ -40,11 +40,24 @@ const Shop: React.FC = () => {
         if (searchFilter) {
           productsData = await productService.searchProductsPaged(searchFilter, { page: currentPage, size: PAGE_SIZE });
         } else {
-          productsData = await productService.getProductsPaged({
-            page: currentPage,
-            size: PAGE_SIZE,
-            categoryId: !isNaN(categoryId!) ? categoryId : undefined,
-          });
+          try {
+            productsData = await productService.getProductsPaged({
+              page: currentPage,
+              size: PAGE_SIZE,
+              categoryId: !isNaN(categoryId!) ? categoryId : undefined,
+            });
+          } catch {
+            // fallback: wrap non-paged response into PagedResponse shape
+            const all = await productService.getAllProducts();
+            const filtered = categoryId ? all.filter(p => p.categoryId === categoryId) : all;
+            productsData = {
+              content: filtered,
+              totalElements: filtered.length,
+              totalPages: 1,
+              size: filtered.length,
+              number: 0,
+            };
+          }
         }
 
         setPagedData(productsData);
