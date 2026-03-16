@@ -70,7 +70,7 @@ const OrderDetail: React.FC = () => {
   };
 
   const formatCurrency = (value: number) => {
-    return `$${value.toFixed(2)}`;
+    return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(value);
   };
 
   if (loading) {

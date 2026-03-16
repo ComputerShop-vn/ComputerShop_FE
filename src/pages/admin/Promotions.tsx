@@ -649,7 +649,7 @@ const AdminPromotions: React.FC = () => {
                                   <p className="text-sm font-medium text-gray-900">{product.name || product.productName}</p>
                                   <p className="text-xs text-gray-500">ID: {product.productId} | {product.brandName}</p>
                                 </div>
-                                <span className="text-sm font-bold text-gray-700">${product.basePrice}</span>
+                                <span className="text-sm font-bold text-gray-700">{new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(product.basePrice)}</span>
                               </label>
                             ))}
                           </div>

@@ -4,6 +4,8 @@ import { useCompare } from '../../context/CompareContext';
 import { useCart } from '../../context/CartContext';
 import { motion } from 'motion/react';
 
+const fmt = (v: number) => new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(v);
+
 const Compare: React.FC = () => {
   const { compareItems, removeFromCompare, clearCompare } = useCompare();
   const { addToCart } = useCart();
@@ -94,10 +96,10 @@ const Compare: React.FC = () => {
                       />
                       <h3 className="text-sm font-bold text-black line-clamp-2 mb-2 h-10">{item.name}</h3>
                       <div className="flex items-center justify-center gap-2">
-                        <p className="text-lg font-black text-black">${displayPrice.toLocaleString()}</p>
+                        <p className="text-lg font-black text-black">{fmt(displayPrice)}</p>
                         {hasDiscount && (
                           <>
-                            <p className="text-sm text-red-400 line-through">${item.basePrice.toLocaleString()}</p>
+                            <p className="text-sm text-red-400 line-through">{fmt(item.basePrice)}</p>
                             <span className="text-[10px] font-bold bg-red-100 text-red-600 px-1.5 py-0.5 rounded">-{discountPct}%</span>
                           </>
                         )}

@@ -7,6 +7,8 @@ import { productService } from '../../api/services/productService';
 import { ProductDetailResponse, ProductVariantResponse } from '../../api/types/product';
 import ProductCard from '../../components/ui/ProductCard';
 
+const fmt = (v: number) => new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(v);
+
 const ProductDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -186,11 +188,11 @@ const ProductDetail: React.FC = () => {
           <div className="flex items-end gap-4 border-b border-gray-100 pb-6 mb-6">
             <div className="space-y-1">
               <p className="text-3xl font-bold text-gray-900">
-                ${variantPrice.toLocaleString()}
+                {fmt(variantPrice)}
               </p>
               {variantBasePrice && (
                 <p className="text-sm text-red-500 line-through">
-                  ${variantBasePrice.toLocaleString()}
+                  {fmt(variantBasePrice)}
                 </p>
               )}
             </div>

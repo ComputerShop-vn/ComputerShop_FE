@@ -6,6 +6,8 @@ import { useCart } from '../../context/CartContext';
 import { useAuth } from '../../context/AuthContext';
 import { useCompare } from '../../context/CompareContext';
 
+const fmt = (v: number) => new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(v);
+
 interface ProductCardProps {
   product: Product | ProductResponse;
 }
@@ -140,14 +142,14 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
         <div className="mt-2 flex justify-center items-center space-x-3">
           {hasDiscount ? (
             <>
-              <span className="text-sm font-bold text-black">${productDisplayPrice.toLocaleString()}</span>
-              <span className="text-xs text-red-500 line-through">${productPrice.toLocaleString()}</span>
+              <span className="text-sm font-bold text-black">{fmt(productDisplayPrice)}</span>
+              <span className="text-xs text-red-500 line-through">{fmt(productPrice)}</span>
             </>
           ) : (
             <>
-              <span className="text-sm font-bold">${(isApiProduct ? productDisplayPrice : productPrice).toLocaleString()}</span>
+              <span className="text-sm font-bold">{fmt(isApiProduct ? productDisplayPrice : productPrice)}</span>
               {productOriginalPrice && (
-                <span className="text-xs text-red-500 line-through">${productOriginalPrice.toLocaleString()}</span>
+                <span className="text-xs text-red-500 line-through">{fmt(productOriginalPrice)}</span>
               )}
             </>
           )}

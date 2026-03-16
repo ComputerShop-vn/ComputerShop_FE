@@ -253,7 +253,7 @@ const Header: React.FC<HeaderProps> = ({ cartCount }) => {
                     <div className="flex-1 min-w-0">
                       <h4 className="text-sm font-medium text-gray-900 truncate group-hover:text-black transition">{product.name}</h4>
                       <div className="flex items-center gap-2 mt-0.5">
-                        <span className="text-xs font-bold text-black">${product.price.toLocaleString()}</span>
+                        <span className="text-xs font-bold text-black">{product.price.toLocaleString('vi-VN')}₫</span>
                         <span className="text-[10px] text-gray-400 uppercase tracking-tighter">{product.category}</span>
                       </div>
                     </div>

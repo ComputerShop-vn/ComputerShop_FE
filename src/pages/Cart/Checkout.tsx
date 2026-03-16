@@ -338,7 +338,7 @@ const Checkout: React.FC = () => {
                     <h4 className="text-xs font-bold text-black truncate">{item.name}</h4>
                     <p className="text-[10px] text-gray-400">SL: {item.quantity}</p>
                   </div>
-                  <p className="text-xs font-bold text-black">${(item.price * item.quantity).toLocaleString()}</p>
+                  <p className="text-xs font-bold text-black">{fmt(item.price * item.quantity)}</p>
                 </div>
               ))}
             </div>

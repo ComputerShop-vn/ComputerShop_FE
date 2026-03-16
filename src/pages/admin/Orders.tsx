@@ -6,6 +6,8 @@ import { OrderResponse } from '../../api/types/order';
 import { PagedResponse } from '../../api/types/common';
 import Pagination from '../../components/ui/Pagination';
 
+const fmt = (v: number) => new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(v);
+
 const PAGE_SIZE = 10;
 
 const statusConfig: Record<string, { label: string; color: string }> = {
@@ -137,7 +139,7 @@ const AdminOrders: React.FC = () => {
                     <td className="p-4 text-xs text-gray-500">{formatDate(order.orderDate || order.createdAt)}</td>
 
                     <td className="p-4">
-                      <p className="text-sm font-black text-gray-900">${order.totalAmount.toLocaleString()}</p>
+                      <p className="text-sm font-black text-gray-900">{fmt(order.totalAmount)}</p>
                     </td>
 
                     <td className="p-4">

@@ -311,7 +311,7 @@ const AdminProducts: React.FC = () => {
     setImages([]);
   };
 
-  const formatCurrency = (value: number) => `$${value?.toFixed(2) ?? '0.00'}`;
+  const formatCurrency = (value: number) => new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(value ?? 0);
 
   const inputCls = 'w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm';
   const labelCls = 'block text-xs font-bold text-gray-600 mb-1';

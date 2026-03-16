@@ -117,10 +117,10 @@ const Dashboard: React.FC = () => {
             {[
               {
                 label: 'Doanh Thu Thực Thu',
-                val: `$${totalRevenue.toLocaleString()}`,
+                val: new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(totalRevenue),
                 icon: 'payments',
                 color: 'blue',
-                sub: pendingRevenue > 0 ? `+$${pendingRevenue.toLocaleString()} chờ thu góp` : 'Đã thu đầy đủ',
+                sub: pendingRevenue > 0 ? `+${new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(pendingRevenue)} chờ thu góp` : 'Đã thu đầy đủ',
                 subColor: pendingRevenue > 0 ? 'text-amber-500' : 'text-gray-400',
               },
               {
@@ -172,9 +172,9 @@ const Dashboard: React.FC = () => {
                     <LineChart data={chartData}>
                       <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
                       <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#94a3b8' }} />
-                      <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#94a3b8' }} tickFormatter={(v) => `$${v.toLocaleString()}`} />
+                      <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#94a3b8' }} tickFormatter={(v) => new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(v)} />
                       <Tooltip
-                        formatter={(v: number) => [`$${v.toLocaleString()}`, 'Doanh thu thực thu']}
+                        formatter={(v: number) => [new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(v), 'Doanh thu thực thu']}
                         contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
                       />
                       <Line type="monotone" dataKey="rev" stroke="#2563eb" strokeWidth={3} dot={{ r: 4, fill: '#2563eb' }} />
@@ -244,11 +244,11 @@ const Dashboard: React.FC = () => {
                         <td className="px-6 py-4">
                           {isInstallment ? (
                             <div>
-                              <p className="text-sm font-bold text-emerald-600">${actualRev.toLocaleString()} thu</p>
-                              <p className="text-xs text-gray-400">/ ${order.totalAmount.toLocaleString()} tổng</p>
+                              <p className="text-sm font-bold text-emerald-600">{new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(actualRev)} thu</p>
+                              <p className="text-xs text-gray-400">/ {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(order.totalAmount)} tổng</p>
                             </div>
                           ) : (
-                            <p className="text-sm font-bold text-gray-900">${order.totalAmount.toLocaleString()}</p>
+                            <p className="text-sm font-bold text-gray-900">{new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(order.totalAmount)}</p>
                           )}
                         </td>
                         <td className="px-6 py-4">

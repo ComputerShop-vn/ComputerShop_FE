@@ -2,6 +2,8 @@ import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useCart } from '../../context/CartContext';
 
+const fmt = (v: number) => new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(v);
+
 const Cart: React.FC = () => {
   const { cart, removeFromCart, updateQuantity, totalPrice, totalItems } = useCart();
   const navigate = useNavigate();
@@ -79,11 +81,11 @@ const Cart: React.FC = () => {
 
                 {/* Price */}
                 <div className="text-center sm:text-right min-w-[100px]">
-                  <p className="text-sm font-black text-black">${(item.price * item.quantity).toLocaleString()}</p>
+                  <p className="text-sm font-black text-black">{fmt(item.price * item.quantity)}</p>
                   <div className="flex flex-col items-end mt-1">
-                    <p className="text-[10px] text-gray-400">${item.price.toLocaleString()} / cái</p>
+                    <p className="text-[10px] text-gray-400">{fmt(item.price)} / cái</p>
                     {item.originalPrice && (
-                      <p className="text-[10px] text-red-400 line-through">${item.originalPrice.toLocaleString()}</p>
+                      <p className="text-[10px] text-red-400 line-through">{fmt(item.originalPrice)}</p>
                     )}
                   </div>
                 </div>
@@ -115,7 +117,7 @@ const Cart: React.FC = () => {
             <div className="space-y-4 mb-8">
               <div className="flex justify-between text-sm">
                 <span className="text-gray-400">Tạm tính</span>
-                <span className="font-bold text-black">${totalPrice.toLocaleString()}</span>
+                <span className="font-bold text-black">{fmt(totalPrice)}</span>
               </div>
               <div className="flex justify-between text-sm">
                 <span className="text-gray-400">Giao hàng</span>
@@ -124,7 +126,7 @@ const Cart: React.FC = () => {
               <div className="pt-4 border-t border-gray-50 flex justify-between items-end">
                 <span className="text-xs font-bold uppercase tracking-widest text-black">Tổng cộng</span>
                 <div className="text-right">
-                  <p className="text-2xl font-black text-black leading-none">${totalPrice.toLocaleString()}</p>
+                  <p className="text-2xl font-black text-black leading-none">{fmt(totalPrice)}</p>
                   <p className="text-[10px] text-gray-400 mt-1 uppercase font-bold">Đã bao gồm VAT</p>
                 </div>
               </div>

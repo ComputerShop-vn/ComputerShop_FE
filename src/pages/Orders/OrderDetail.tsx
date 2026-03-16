@@ -5,6 +5,8 @@ import { orderService } from '../../api/services/orderService';
 import { paymentService } from '../../api/services/paymentService';
 import { OrderResponse } from '../../api/types/order';
 
+const fmt = (v: number) => new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(v);
+
 const statusLabel: Record<string, { label: string; color: string }> = {
   PENDING:   { label: 'Chờ xác nhận', color: 'bg-yellow-100 text-yellow-700' },
   CONFIRMED: { label: 'Đã xác nhận',  color: 'bg-blue-100 text-blue-700' },
@@ -133,7 +135,7 @@ const OrderDetail: React.FC = () => {
                   </div>
                   <div className="text-right flex-shrink-0">
                     <p className="text-xs text-gray-400">x{item.quantity}</p>
-                    <p className="text-sm font-bold text-black">${item.subtotal.toLocaleString()}</p>
+                    <p className="text-sm font-bold text-black">{fmt(item.subtotal)}</p>
                   </div>
                 </div>
               ))}
@@ -170,7 +172,7 @@ const OrderDetail: React.FC = () => {
                         </div>
                       </div>
                       <div className="flex items-center gap-2">
-                        <p className="font-bold text-sm">${p.amount.toLocaleString()}</p>
+                        <p className="font-bold text-sm">{fmt(p.amount)}</p>
                         <span className={`px-2 py-0.5 rounded-full text-[9px] font-bold uppercase ${
                           isPaid ? 'bg-green-100 text-green-700' :
                           isOverdue ? 'bg-red-100 text-red-700' :
@@ -211,7 +213,7 @@ const OrderDetail: React.FC = () => {
               </div>
               <div className="flex justify-between items-end pt-3 border-t border-gray-50">
                 <span className="text-xs font-bold uppercase tracking-widest">Tổng tiền</span>
-                <span className="text-xl font-black text-black">${order.totalAmount.toLocaleString()}</span>
+                <span className="text-xl font-black text-black">{fmt(order.totalAmount)}</span>
               </div>
             </div>
           </div>
@@ -220,7 +222,7 @@ const OrderDetail: React.FC = () => {
           {hasUnpaidInstallment && (
             <div className="bg-amber-50 border border-amber-200 rounded-2xl p-5">
               <p className="text-[10px] font-bold uppercase tracking-widest text-amber-600 mb-1">Kỳ thanh toán tiếp theo</p>
-              <p className="text-2xl font-black text-amber-700 mb-3">${nextUnpaid!.amount.toLocaleString()}</p>
+              <p className="text-2xl font-black text-amber-700 mb-3">{fmt(nextUnpaid!.amount)}</p>
               <p className="text-xs text-amber-600 mb-4">Hạn: {new Date(nextUnpaid!.dueDate).toLocaleDateString('vi-VN')}</p>
               <button
                 onClick={handlePayNextInstallment}

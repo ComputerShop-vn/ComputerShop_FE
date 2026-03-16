@@ -4,6 +4,8 @@ import { useCompare } from '../../context/CompareContext';
 import { productService } from '../../api/services/productService';
 import { ProductResponse } from '../../api/types/product';
 
+const fmt = (v: number) => new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(v);
+
 const CompareSearchModal: React.FC = () => {
   const { isSearchModalOpen, closeSearchModal, addToCompare, isInCompare, compareItems } = useCompare();
   const [searchTerm, setSearchTerm] = useState('');
@@ -87,9 +89,9 @@ const CompareSearchModal: React.FC = () => {
                       <h4 className="text-sm font-bold text-gray-900 truncate">{product.name}</h4>
                       <p className="text-[10px] text-gray-400 uppercase">{product.brandName} · {product.categoryName}</p>
                       <div className="flex items-center gap-2 mt-1">
-                        <span className="text-sm font-black text-red-600">${displayPrice.toLocaleString()}</span>
+                        <span className="text-sm font-black text-red-600">{fmt(displayPrice)}</span>
                         {product.discountedPrice && (
-                          <span className="text-[10px] text-gray-400 line-through">${product.basePrice.toLocaleString()}</span>
+                          <span className="text-[10px] text-gray-400 line-through">{fmt(product.basePrice)}</span>
                         )}
                       </div>
                     </div>

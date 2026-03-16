@@ -13,6 +13,8 @@ import {
 } from '../api/types/pcbuild';
 import { ProductResponse } from '../api/types/product';
 
+const fmt = (v: number) => new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(v);
+
 // All component slots to show in order
 const COMPONENT_SLOTS: ComponentType[] = [
   'CPU', 'MAINBOARD', 'RAM', 'GPU',
@@ -183,8 +185,7 @@ const BuildPC: React.FC = () => {
             <div className="bg-black text-white p-6 rounded-2xl shadow-xl min-w-[240px]">
               <p className="text-[10px] font-bold uppercase tracking-[0.2em] opacity-60 mb-1">Tổng cộng dự tính</p>
               <div className="flex items-baseline gap-2">
-                <span className="text-3xl font-black">${(build?.totalPrice || 0).toFixed(2)}</span>
-                <span className="text-xs opacity-60 uppercase font-bold">USD</span>
+                <span className="text-3xl font-black">{fmt(build?.totalPrice || 0)}</span>
               </div>
             </div>
           </div>
@@ -233,7 +234,7 @@ const BuildPC: React.FC = () => {
                         <div className="flex-1 min-w-0">
                           <h4 className="text-sm font-bold text-black truncate">{item.productName}</h4>
                           <p className="text-xs text-gray-400 mt-0.5">{item.variantName}</p>
-                          <p className="text-xs font-bold text-gray-700 mt-1">${item.price.toFixed(2)}</p>
+                          <p className="text-xs font-bold text-gray-700 mt-1">{fmt(item.price)}</p>
                         </div>
                         <button
                           onClick={() => handleRemoveItem(slot)}
@@ -337,10 +338,10 @@ const BuildPC: React.FC = () => {
                     </div>
                     <div className="text-right">
                       <p className="text-sm font-black text-black">
-                        ${(product.discountedPrice ?? product.basePrice).toFixed(2)}
+                        {fmt(product.discountedPrice ?? product.basePrice)}
                       </p>
                       {product.discountedPrice && (
-                        <p className="text-xs text-red-400 line-through">${product.basePrice.toFixed(2)}</p>
+                        <p className="text-xs text-red-400 line-through">{fmt(product.basePrice)}</p>
                       )}
                     </div>
                   </div>

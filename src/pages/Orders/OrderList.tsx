@@ -6,6 +6,8 @@ import { OrderResponse } from '../../api/types/order';
 import { PagedResponse } from '../../api/types/common';
 import Pagination from '../../components/ui/Pagination';
 
+const fmt = (v: number) => new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(v);
+
 const PAGE_SIZE = 10;
 
 const statusLabel: Record<string, { label: string; color: string }> = {
@@ -97,7 +99,7 @@ const OrderList: React.FC = () => {
                 </div>
                 <div className="flex items-center gap-6">
                   <p className="text-lg font-black text-black">
-                    ${order.totalAmount.toLocaleString()}
+                    {fmt(order.totalAmount)}
                   </p>
                   <span className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest ${st.color}`}>
                     {st.label}
