@@ -4,7 +4,7 @@ import ProductCard from '../../components/ui/ProductCard';
 import { productService } from '../../api/services/productService';
 import { categoryService } from '../../api/services/categoryService';
 import { ProductResponse } from '../../api/types/product';
-import { CategoryResponse } from '../../api/types/category';
+import { CategoryTreeNode } from '../../api/types/category';
 import { PagedResponse } from '../../api/types/common';
 import Pagination from '../../components/ui/Pagination';
 
@@ -37,7 +37,8 @@ const Shop: React.FC = () => {
   const [products, setProducts] = useState<ProductResponse[]>([]);
   const [allProducts, setAllProducts] = useState<ProductResponse[]>([]);
   const [currentPage, setCurrentPage] = useState(0);
-  const [categories, setCategories] = useState<CategoryResponse[]>([]);
+  const [categories, setCategories] = useState<CategoryTreeNode[]>([]);
+  const [expandedIds, setExpandedIds] = useState<Set<number>>(new Set());
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedPriceRange, setSelectedPriceRange] = useState<typeof PRICE_RANGES[0] | null>(null);
@@ -89,7 +90,7 @@ const Shop: React.FC = () => {
         setAllProducts(fetched);
 
         if (categories.length === 0) {
-          const cats = await categoryService.getAllCategories();
+          const cats = await categoryService.getCategoryTree();
           setCategories(cats);
         }
       } catch (err: any) {
@@ -144,44 +145,101 @@ const Shop: React.FC = () => {
     }
   };
 
+  const toggleExpand = (id: number) => {
+    setExpandedIds(prev => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
+  };
+
+  // Flatten tree to find name by id
+  const findCategoryName = (nodes: CategoryTreeNode[], id: number): string | null => {
+    for (const n of nodes) {
+      if (n.categoryId === id) return n.categoryName;
+      if (n.children) {
+        const found = findCategoryName(n.children, id);
+        if (found) return found;
+      }
+    }
+    return null;
+  };
+
   const activeCategoryName = categoryFilter
-    ? categories.find(c => c.categoryId === parseInt(categoryFilter))?.categoryName || categoryFilter
+    ? findCategoryName(categories, parseInt(categoryFilter)) || categoryFilter
     : null;
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-12 font-['Jost']">
       <div className="flex flex-col lg:flex-row gap-12">
-        {/* Sidebar — categories only */}
+        {/* Sidebar — categories tree */}
         <aside className="w-full lg:w-64 flex-shrink-0">
           <div className="sticky top-32 space-y-8">
             <div>
               <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 mb-6 border-b border-gray-100 pb-2">Danh mục</h3>
-              <div className="flex flex-wrap lg:flex-col gap-2">
+              <div className="flex flex-col gap-1">
+                {/* All */}
                 <button
                   onClick={() => handleCategoryChange(null)}
-                  className={`px-4 py-2 text-sm font-medium rounded-lg transition-all text-left flex items-center justify-between group ${
+                  className={`px-4 py-2 text-sm font-medium rounded-lg transition-all text-left flex items-center justify-between ${
                     !categoryFilter ? 'bg-black text-white shadow-lg shadow-black/10' : 'text-gray-500 hover:bg-gray-100 hover:text-black'
                   }`}
                 >
                   Tất cả
-                  <span className={`material-symbols-outlined text-sm ${!categoryFilter ? 'opacity-100' : 'opacity-0'}`}>chevron_right</span>
+                  {!categoryFilter && <span className="material-symbols-outlined text-sm">chevron_right</span>}
                 </button>
-                {categories.map((cat) => (
-                  <button
-                    key={cat.categoryId}
-                    onClick={() => handleCategoryChange(cat.categoryId)}
-                    className={`px-4 py-2 text-sm font-medium rounded-lg transition-all text-left flex items-center justify-between group ${
-                      categoryFilter === String(cat.categoryId)
-                        ? 'bg-black text-white shadow-lg shadow-black/10'
-                        : 'text-gray-500 hover:bg-gray-100 hover:text-black'
-                    }`}
-                  >
-                    {cat.categoryName}
-                    <span className={`material-symbols-outlined text-sm transition-transform group-hover:translate-x-1 ${
-                      categoryFilter === String(cat.categoryId) ? 'opacity-100' : 'opacity-0'
-                    }`}>chevron_right</span>
-                  </button>
-                ))}
+
+                {/* Tree nodes */}
+                {categories.map((parent) => {
+                  const hasChildren = parent.children && parent.children.length > 0;
+                  const isExpanded = expandedIds.has(parent.categoryId);
+                  const isActive = categoryFilter === String(parent.categoryId);
+
+                  return (
+                    <div key={parent.categoryId}>
+                      <div className="flex items-center gap-1">
+                        <button
+                          onClick={() => handleCategoryChange(parent.categoryId)}
+                          className={`flex-1 px-4 py-2 text-sm font-medium rounded-lg transition-all text-left ${
+                            isActive ? 'bg-black text-white shadow-lg shadow-black/10' : 'text-gray-600 hover:bg-gray-100 hover:text-black'
+                          }`}
+                        >
+                          {parent.categoryName}
+                        </button>
+                        {hasChildren && (
+                          <button
+                            onClick={() => toggleExpand(parent.categoryId)}
+                            className="p-1.5 text-gray-400 hover:text-black hover:bg-gray-100 rounded-lg transition"
+                          >
+                            <span className={`material-symbols-outlined text-sm transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`}>
+                              expand_more
+                            </span>
+                          </button>
+                        )}
+                      </div>
+
+                      {/* Children */}
+                      {hasChildren && isExpanded && (
+                        <div className="ml-4 mt-1 flex flex-col gap-1 border-l-2 border-gray-100 pl-3">
+                          {parent.children!.map((child) => {
+                            const isChildActive = categoryFilter === String(child.categoryId);
+                            return (
+                              <button
+                                key={child.categoryId}
+                                onClick={() => handleCategoryChange(child.categoryId)}
+                                className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-all text-left ${
+                                  isChildActive ? 'bg-black text-white' : 'text-gray-500 hover:bg-gray-100 hover:text-black'
+                                }`}
+                              >
+                                {child.categoryName}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
             </div>
 

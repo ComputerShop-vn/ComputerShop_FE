@@ -4,6 +4,8 @@ import { Link, useNavigate } from 'react-router-dom';
 import { PRODUCTS } from '../../constants/index';
 import { Product } from '../../types/index';
 import { useAuth } from '../../context/AuthContext';
+import { categoryService } from '../../api/services/categoryService';
+import { CategoryTreeNode } from '../../api/types/category';
 
 interface HeaderProps {
   cartCount: number;
@@ -59,44 +61,23 @@ const Header: React.FC<HeaderProps> = ({ cartCount }) => {
   };
 
   const [showCategories, setShowCategories] = useState(false);
-  const [activeCategory, setActiveCategory] = useState<string | null>(null);
+  const [activeCategoryId, setActiveCategoryId] = useState<number | null>(null);
+  const [categoryTree, setCategoryTree] = useState<CategoryTreeNode[]>([]);
   const categoryRef = useRef<HTMLDivElement>(null);
 
-  const categories = [
-    {
-      name: 'Laptop',
-      icon: 'laptop_mac',
-      subcategories: ['Laptop Gaming', 'Laptop Văn Phòng', 'MacBook', 'Laptop Đồ Họa']
-    },
-    {
-      name: 'Linh kiện',
-      icon: 'memory',
-      subcategories: ['CPU - Vi xử lý', 'VGA - Card màn hình', 'Mainboard - Bo mạch chủ', 'RAM - Bộ nhớ trong', 'SSD - Ổ cứng']
-    },
-    {
-      name: 'Build PC',
-      icon: 'desktop_windows',
-      path: '/build-pc',
-      subcategories: ['PC Gaming', 'PC Văn Phòng', 'Workstation', 'PC Custom Water Cooling']
-    },
-    {
-      name: 'Màn hình',
-      icon: 'monitor',
-      subcategories: ['Màn hình Gaming', 'Màn hình Đồ họa', 'Màn hình Cong']
-    },
-    {
-      name: 'Phụ kiện',
-      icon: 'keyboard',
-      subcategories: ['Bàn phím cơ', 'Chuột Gaming', 'Tai nghe', 'Ghế Gaming']
-    }
-  ];
-
-  // Initialize active category when menu opens
+  // Load category tree once
   useEffect(() => {
-    if (showCategories && !activeCategory) {
-      setActiveCategory(categories[0].name);
+    categoryService.getCategoryTree().then(tree => {
+      setCategoryTree(tree);
+    }).catch(() => {});
+  }, []);
+
+  // Set first category active when menu opens
+  useEffect(() => {
+    if (showCategories && categoryTree.length > 0 && activeCategoryId === null) {
+      setActiveCategoryId(categoryTree[0].categoryId);
     }
-  }, [showCategories]);
+  }, [showCategories, categoryTree]);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -114,13 +95,10 @@ const Header: React.FC<HeaderProps> = ({ cartCount }) => {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const handleCategoryClick = (category: string, path?: string) => {
-    if (path) {
-      navigate(path);
-    } else {
-      navigate(`/shop?category=${encodeURIComponent(category)}`);
-    }
+  const handleCategoryClick = (categoryId: number) => {
+    navigate(`/shop?category=${categoryId}`);
     setShowCategories(false);
+    setActiveCategoryId(null);
   };
 
   const handleLogout = () => {
@@ -129,7 +107,7 @@ const Header: React.FC<HeaderProps> = ({ cartCount }) => {
     navigate('/');
   };
 
-  const activeCategoryData = categories.find(c => c.name === activeCategory);
+  const activeCategoryData = categoryTree.find(c => c.categoryId === activeCategoryId);
 
   return (
     <header className="bg-white border-b border-gray-100 sticky top-0 z-50 font-['Jost']">
@@ -145,7 +123,7 @@ const Header: React.FC<HeaderProps> = ({ cartCount }) => {
         {/* Categories Button */}
         <div className="relative" ref={categoryRef}>
           <button 
-            onClick={() => setShowCategories(!showCategories)}
+            onClick={() => { setShowCategories(!showCategories); if (showCategories) setActiveCategoryId(null); }}
             className={`hidden lg:flex items-center gap-2 px-3 py-2 rounded-lg transition whitespace-nowrap border ${showCategories ? 'bg-black text-white border-black' : 'bg-gray-50 border-gray-100 hover:bg-gray-100'}`}
           >
             <span className="material-symbols-outlined text-xl">{showCategories ? 'close' : 'grid_view'}</span>
@@ -158,50 +136,56 @@ const Header: React.FC<HeaderProps> = ({ cartCount }) => {
             <div className="absolute top-full left-0 mt-2 w-[650px] bg-white border border-gray-100 rounded-2xl shadow-2xl overflow-hidden z-[70] flex animate-in fade-in slide-in-from-top-2 duration-200">
               {/* Left Sidebar */}
               <div className="w-[240px] bg-gray-50 border-r border-gray-100 p-2">
-                {categories.map((cat) => (
+                {categoryTree.map((cat) => (
                   <button
-                    key={cat.name}
-                    onMouseEnter={() => setActiveCategory(cat.name)}
-                    onClick={() => handleCategoryClick(cat.name, (cat as any).path)}
-                    className={`w-full flex items-center justify-between p-3 rounded-xl transition group text-left ${activeCategory === cat.name ? 'bg-white shadow-sm ring-1 ring-black/5' : 'hover:bg-white/50'}`}
+                    key={cat.categoryId}
+                    onMouseEnter={() => setActiveCategoryId(cat.categoryId)}
+                    onClick={() => handleCategoryClick(cat.categoryId)}
+                    className={`w-full flex items-center justify-between p-3 rounded-xl transition group text-left ${activeCategoryId === cat.categoryId ? 'bg-white shadow-sm ring-1 ring-black/5' : 'hover:bg-white/50'}`}
                   >
                     <div className="flex items-center gap-3">
-                      <span className={`material-symbols-outlined transition ${activeCategory === cat.name ? 'text-black' : 'text-gray-400 group-hover:text-black'}`}>{cat.icon}</span>
-                      <span className={`text-sm font-medium transition ${activeCategory === cat.name ? 'text-black' : 'text-gray-600 group-hover:text-black'}`}>{cat.name}</span>
+                      <span className={`material-symbols-outlined transition ${activeCategoryId === cat.categoryId ? 'text-black' : 'text-gray-400 group-hover:text-black'}`}>category</span>
+                      <span className={`text-sm font-medium transition ${activeCategoryId === cat.categoryId ? 'text-black' : 'text-gray-600 group-hover:text-black'}`}>{cat.categoryName}</span>
                     </div>
-                    <span className={`material-symbols-outlined text-sm transition ${activeCategory === cat.name ? 'text-black translate-x-0.5' : 'text-gray-300 group-hover:text-black'}`}>chevron_right</span>
+                    {cat.children && cat.children.length > 0 && (
+                      <span className={`material-symbols-outlined text-sm transition ${activeCategoryId === cat.categoryId ? 'text-black translate-x-0.5' : 'text-gray-300 group-hover:text-black'}`}>chevron_right</span>
+                    )}
                   </button>
                 ))}
               </div>
 
-              {/* Right Content (Subcategories) */}
+              {/* Right Content (Children) */}
               <div className="flex-1 p-8 bg-white">
                 {activeCategoryData && (
                   <div className="animate-in fade-in slide-in-from-left-2 duration-300">
                     <div className="flex items-center gap-3 mb-6">
-                      <span className="material-symbols-outlined text-black bg-gray-100 p-2 rounded-lg">{activeCategoryData.icon}</span>
-                      <h3 className="text-lg font-bold text-black uppercase tracking-tight">{activeCategoryData.name}</h3>
-                    </div>
-                    
-                    <div className="grid grid-cols-1 gap-y-4">
-                      {activeCategoryData.subcategories.map((sub) => (
-                        <button 
-                          key={sub}
-                          onClick={() => handleCategoryClick(sub)}
-                          className="text-sm text-gray-500 hover:text-black hover:translate-x-2 transition-all flex items-center gap-3 group text-left"
-                        >
-                          <span className="w-1.5 h-1.5 bg-gray-200 rounded-full group-hover:bg-black transition-colors"></span>
-                          <span className="font-medium">{sub}</span>
-                        </button>
-                      ))}
+                      <span className="material-symbols-outlined text-black bg-gray-100 p-2 rounded-lg">category</span>
+                      <h3 className="text-lg font-bold text-black uppercase tracking-tight">{activeCategoryData.categoryName}</h3>
                     </div>
 
+                    {activeCategoryData.children && activeCategoryData.children.length > 0 ? (
+                      <div className="grid grid-cols-1 gap-y-4">
+                        {activeCategoryData.children.map((child) => (
+                          <button
+                            key={child.categoryId}
+                            onClick={() => handleCategoryClick(child.categoryId)}
+                            className="text-sm text-gray-500 hover:text-black hover:translate-x-2 transition-all flex items-center gap-3 group text-left"
+                          >
+                            <span className="w-1.5 h-1.5 bg-gray-200 rounded-full group-hover:bg-black transition-colors"></span>
+                            <span className="font-medium">{child.categoryName}</span>
+                          </button>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-sm text-gray-400 italic">Không có danh mục con</p>
+                    )}
+
                     <div className="mt-10 pt-6 border-t border-gray-50">
-                      <button 
-                        onClick={() => handleCategoryClick(activeCategoryData.name)}
+                      <button
+                        onClick={() => handleCategoryClick(activeCategoryData.categoryId)}
                         className="text-[11px] font-bold uppercase tracking-widest text-black hover:underline underline-offset-8 transition-all flex items-center gap-2"
                       >
-                        Xem tất cả {activeCategoryData.name}
+                        Xem tất cả {activeCategoryData.categoryName}
                         <span className="material-symbols-outlined text-sm">arrow_right_alt</span>
                       </button>
                     </div>
