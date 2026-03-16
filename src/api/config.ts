@@ -101,6 +101,10 @@ export const API_ENDPOINTS = {
   AUTH_LOGOUT: `${API_VERSION}/auth/logout`,
   AUTH_INTROSPECT: `${API_VERSION}/auth/introspect`,
   AUTH_REFRESH: `${API_VERSION}/auth/refresh`,
+
+  // OTP Verification
+  OTP_SEND: `${API_VERSION}/otp-verification/send-otp`,
+  OTP_VERIFY: `${API_VERSION}/otp-verification/verify-otp`,
 } as const;
 
 // HTTP Methods

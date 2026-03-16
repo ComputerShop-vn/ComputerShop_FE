@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 
 const Login: React.FC = () => {
@@ -11,6 +11,8 @@ const Login: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
   const { login } = useAuth();
+  const location = useLocation();
+  const registeredSuccess = (location.state as any)?.registered === true;
 
   const toggleDarkMode = () => {
     setIsDarkMode(!isDarkMode);
@@ -126,6 +128,11 @@ const Login: React.FC = () => {
               
 
               <form className="space-y-6" onSubmit={handleLogin}>
+                {registeredSuccess && (
+                  <p className="text-xs text-green-700 font-bold bg-green-50 dark:bg-green-900/20 p-3 rounded">
+                    Đăng ký thành công! Vui lòng đăng nhập.
+                  </p>
+                )}
                 {error && (
                   <p className="text-xs text-red-500 font-bold bg-red-50 dark:bg-red-900/20 p-3 rounded">{error}</p>
                 )}

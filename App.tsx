@@ -20,6 +20,7 @@ import AdminBlogs from './src/pages/admin/Blogs';
 import AdminInstallmentPackages from './src/pages/admin/InstallmentPackages';
 import Login from './src/pages/auth/Login';
 import Register from './src/pages/auth/Register';
+import OtpVerification from './src/pages/auth/OtpVerification';
 import BuildPC from './src/pages/BuildPC';
 import ScrollToTop from './src/components/ScrollToTop';
 import { AuthProvider } from './src/context/AuthContext';
@@ -75,6 +76,7 @@ const App: React.FC = () => {
               {/* Auth routes */}
               <Route path="/login" element={<Login />} />
               <Route path="/register" element={<Register />} />
+              <Route path="/verify-otp" element={<OtpVerification />} />
               
               {/* Public routes with Header/Footer layout */}
               <Route path="*" element={

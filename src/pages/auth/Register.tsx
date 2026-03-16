@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { userService } from '../../api/services/userService';
+import { otpService } from '../../api/services/otpService';
 
 const Register: React.FC = () => {
   const [isDarkMode, setIsDarkMode] = useState(false);
@@ -52,19 +53,23 @@ const Register: React.FC = () => {
     setLoading(true);
 
     try {
-      await userService.createUser({
-        username: formData.username,
-        email: formData.email,
-        password: formData.password,
-        fullName: formData.fullName || undefined,
-        phoneNumber: formData.phoneNumber || undefined,
+      await otpService.sendOtp(formData.email);
+      // Navigate sang trang OTP, truyền form data để sau khi verify xong thì tạo tài khoản
+      navigate('/verify-otp', {
+        state: {
+          email: formData.email,
+          registerData: {
+            username: formData.username,
+            email: formData.email,
+            password: formData.password,
+            fullName: formData.fullName || undefined,
+            phoneNumber: formData.phoneNumber || undefined,
+          },
+        },
       });
-
-      alert('Đăng ký thành công! Vui lòng đăng nhập.');
-      navigate('/login');
     } catch (err: any) {
-      console.error('Register error:', err);
-      setError(err.message || 'Đăng ký thất bại. Vui lòng thử lại.');
+      console.error('Send OTP error:', err);
+      setError(err.message || 'Gửi OTP thất bại. Vui lòng thử lại.');
     } finally {
       setLoading(false);
     }
@@ -189,7 +194,7 @@ const Register: React.FC = () => {
                   ĐANG XỬ LÝ...
                 </>
               ) : (
-                'ĐĂNG KÝ'
+                'TIẾP THEO'
               )}
             </button>
 
