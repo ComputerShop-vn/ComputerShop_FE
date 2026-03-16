@@ -10,6 +10,22 @@ import Pagination from '../../components/ui/Pagination';
 
 const PAGE_SIZE = 12;
 
+const PRICE_RANGES = [
+  { label: 'Dưới 5 triệu', min: 0, max: 5_000_000 },
+  { label: '5 - 10 triệu', min: 5_000_000, max: 10_000_000 },
+  { label: '10 - 20 triệu', min: 10_000_000, max: 20_000_000 },
+  { label: '20 - 50 triệu', min: 20_000_000, max: 50_000_000 },
+  { label: 'Trên 50 triệu', min: 50_000_000, max: Infinity },
+];
+
+const DISCOUNT_RANGES = [
+  { label: 'Từ 5%', min: 5 },
+  { label: 'Từ 10%', min: 10 },
+  { label: 'Từ 20%', min: 20 },
+  { label: 'Từ 30%', min: 30 },
+  { label: 'Từ 50%', min: 50 },
+];
+
 const Shop: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
@@ -19,14 +35,19 @@ const Shop: React.FC = () => {
 
   const [pagedData, setPagedData] = useState<PagedResponse<ProductResponse> | null>(null);
   const [products, setProducts] = useState<ProductResponse[]>([]);
+  const [allProducts, setAllProducts] = useState<ProductResponse[]>([]);
   const [currentPage, setCurrentPage] = useState(0);
   const [categories, setCategories] = useState<CategoryResponse[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [selectedPriceRange, setSelectedPriceRange] = useState<typeof PRICE_RANGES[0] | null>(null);
+  const [filterDiscount, setFilterDiscount] = useState(false);
+  const [sortOrder, setSortOrder] = useState<'none' | 'asc' | 'desc'>('none');
+  const [openDropdown, setOpenDropdown] = useState<'price' | 'sort' | null>(null);
 
   useEffect(() => {
     setCurrentPage(0);
-  }, [categoryFilter, searchFilter]);
+  }, [categoryFilter, searchFilter, selectedPriceRange, filterDiscount, sortOrder]);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -36,32 +57,36 @@ const Shop: React.FC = () => {
 
         const categoryId = categoryFilter ? parseInt(categoryFilter) : undefined;
 
-        let productsData: PagedResponse<ProductResponse>;
+        let fetched: ProductResponse[] = [];
+        let totalFromServer = 0;
+
         if (searchFilter) {
-          productsData = await productService.searchProductsPaged(searchFilter, { page: currentPage, size: PAGE_SIZE });
+          // search: fetch all pages or use paged without client filter
+          try {
+            const data = await productService.searchProductsPaged(searchFilter, { page: 0, size: 200 });
+            fetched = data.content;
+            totalFromServer = data.totalElements;
+          } catch {
+            fetched = await productService.getAllProducts();
+            totalFromServer = fetched.length;
+          }
         } else {
           try {
-            productsData = await productService.getProductsPaged({
-              page: currentPage,
-              size: PAGE_SIZE,
-              categoryId: !isNaN(categoryId!) ? categoryId : undefined,
+            const data = await productService.getProductsPaged({
+              page: 0,
+              size: 200,
+              categoryId: categoryId && !isNaN(categoryId) ? categoryId : undefined,
             });
+            fetched = data.content;
+            totalFromServer = data.totalElements;
           } catch {
-            // fallback: wrap non-paged response into PagedResponse shape
             const all = await productService.getAllProducts();
-            const filtered = categoryId ? all.filter(p => p.categoryId === categoryId) : all;
-            productsData = {
-              content: filtered,
-              totalElements: filtered.length,
-              totalPages: 1,
-              size: filtered.length,
-              number: 0,
-            };
+            fetched = categoryId && !isNaN(categoryId) ? all.filter(p => p.categoryId === categoryId) : all;
+            totalFromServer = fetched.length;
           }
         }
 
-        setPagedData(productsData);
-        setProducts(productsData.content);
+        setAllProducts(fetched);
 
         if (categories.length === 0) {
           const cats = await categoryService.getAllCategories();
@@ -75,6 +100,41 @@ const Shop: React.FC = () => {
     };
     fetchData();
   }, [currentPage, categoryFilter, searchFilter]);
+
+  // Apply client-side filters whenever allProducts or filters change
+  useEffect(() => {
+    let filtered = [...allProducts];
+
+    if (selectedPriceRange) {
+      filtered = filtered.filter(p => {
+        const price = p.discountedPrice ?? p.basePrice;
+        return price >= selectedPriceRange.min && price < selectedPriceRange.max;
+      });
+    }
+
+    if (filterDiscount) {
+      filtered = filtered.filter(p =>
+        p.discountedPrice != null && p.discountedPrice < p.basePrice
+      );
+    }
+
+    if (sortOrder === 'asc') {
+      filtered.sort((a, b) => (a.discountedPrice ?? a.basePrice) - (b.discountedPrice ?? b.basePrice));
+    } else if (sortOrder === 'desc') {
+      filtered.sort((a, b) => (b.discountedPrice ?? b.basePrice) - (a.discountedPrice ?? a.basePrice));
+    }
+
+    const start = currentPage * PAGE_SIZE;
+    const pageSlice = filtered.slice(start, start + PAGE_SIZE);
+    setProducts(pageSlice);
+    setPagedData({
+      content: pageSlice,
+      totalElements: filtered.length,
+      totalPages: Math.ceil(filtered.length / PAGE_SIZE),
+      size: PAGE_SIZE,
+      number: currentPage,
+    });
+  }, [allProducts, selectedPriceRange, filterDiscount, sortOrder, currentPage]);
 
   const handleCategoryChange = (categoryId: number | null) => {
     if (categoryId !== null) {
@@ -91,7 +151,7 @@ const Shop: React.FC = () => {
   return (
     <div className="max-w-7xl mx-auto px-4 py-12 font-['Jost']">
       <div className="flex flex-col lg:flex-row gap-12">
-        {/* Sidebar Filters */}
+        {/* Sidebar — categories only */}
         <aside className="w-full lg:w-64 flex-shrink-0">
           <div className="sticky top-32 space-y-8">
             <div>
@@ -135,6 +195,146 @@ const Shop: React.FC = () => {
 
         {/* Main Content */}
         <div className="flex-1">
+          {/* Title */}
+          <div className="mb-6">
+            <h1 className="text-4xl font-light uppercase tracking-tight text-black">
+              {activeCategoryName ? (
+                <>Danh mục: <span className="font-bold">{activeCategoryName}</span></>
+              ) : searchFilter ? (
+                <>Kết quả: <span className="font-bold">"{searchFilter}"</span></>
+              ) : (
+                <>Tất cả <span className="font-bold">Sản phẩm</span></>
+              )}
+            </h1>
+            <p className="text-gray-400 mt-1 text-[10px] font-bold uppercase tracking-[0.2em]">
+              Hiển thị {pagedData?.totalElements ?? products.length} sản phẩm
+            </p>
+          </div>
+
+          {/* Filter bar */}
+          <div className="flex flex-wrap items-center gap-2 mb-8 pb-6 border-b border-gray-100">
+            {/* Price filter */}
+            <div className="relative">
+              <button
+                onClick={() => setOpenDropdown(openDropdown === 'price' ? null : 'price')}
+                className={`flex items-center gap-2 px-4 py-2 rounded-full border text-sm font-medium transition-all ${
+                  selectedPriceRange ? 'bg-black text-white border-black' : 'bg-white border-gray-200 text-gray-600 hover:border-gray-400'
+                }`}
+              >
+                <span className="material-symbols-outlined text-base">payments</span>
+                {selectedPriceRange ? selectedPriceRange.label : 'Lọc theo giá'}
+                {selectedPriceRange ? (
+                  <span
+                    role="button"
+                    onClick={(e) => { e.stopPropagation(); setSelectedPriceRange(null); setOpenDropdown(null); }}
+                    className="ml-1 hover:opacity-70 cursor-pointer"
+                  >
+                    <span className="material-symbols-outlined text-sm">close</span>
+                  </span>
+                ) : (
+                  <span className="material-symbols-outlined text-sm">{openDropdown === 'price' ? 'expand_less' : 'expand_more'}</span>
+                )}
+              </button>
+              {openDropdown === 'price' && (
+                <div className="absolute top-full left-0 mt-2 w-48 bg-white rounded-2xl shadow-xl border border-gray-100 py-2 z-30">
+                  {PRICE_RANGES.map((range) => (
+                    <button
+                      key={range.label}
+                      onClick={() => { setSelectedPriceRange(range); setOpenDropdown(null); }}
+                      className={`w-full text-left px-4 py-2.5 text-sm transition flex items-center justify-between ${
+                        selectedPriceRange?.label === range.label ? 'text-black font-bold bg-gray-50' : 'text-gray-600 hover:bg-gray-50 hover:text-black'
+                      }`}
+                    >
+                      {range.label}
+                      {selectedPriceRange?.label === range.label && <span className="material-symbols-outlined text-sm">check</span>}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Discount toggle */}
+            <button
+              onClick={() => setFilterDiscount(!filterDiscount)}
+              className={`flex items-center gap-2 px-4 py-2 rounded-full border text-sm font-medium transition-all ${
+                filterDiscount ? 'bg-red-500 text-white border-red-500' : 'bg-white border-gray-200 text-gray-600 hover:border-gray-400'
+              }`}
+            >
+              <span className="material-symbols-outlined text-base">local_offer</span>
+              Đang giảm giá
+              {filterDiscount && (
+                <span
+                  role="button"
+                  onClick={(e) => { e.stopPropagation(); setFilterDiscount(false); }}
+                  className="ml-1 hover:opacity-70 cursor-pointer"
+                >
+                  <span className="material-symbols-outlined text-sm">close</span>
+                </span>
+              )}
+            </button>
+
+            {/* Sort */}
+            <div className="relative">
+              <button
+                onClick={() => setOpenDropdown(openDropdown === 'sort' ? null : 'sort')}
+                className={`flex items-center gap-2 px-4 py-2 rounded-full border text-sm font-medium transition-all ${
+                  sortOrder !== 'none' ? 'bg-black text-white border-black' : 'bg-white border-gray-200 text-gray-600 hover:border-gray-400'
+                }`}
+              >
+                <span className="material-symbols-outlined text-base">
+                  {sortOrder === 'asc' ? 'arrow_upward' : sortOrder === 'desc' ? 'arrow_downward' : 'sort'}
+                </span>
+                {sortOrder === 'asc' ? 'Giá thấp → cao' : sortOrder === 'desc' ? 'Giá cao → thấp' : 'Sắp xếp'}
+                {sortOrder !== 'none' ? (
+                  <span
+                    role="button"
+                    onClick={(e) => { e.stopPropagation(); setSortOrder('none'); setOpenDropdown(null); }}
+                    className="ml-1 hover:opacity-70 cursor-pointer"
+                  >
+                    <span className="material-symbols-outlined text-sm">close</span>
+                  </span>
+                ) : (
+                  <span className="material-symbols-outlined text-sm">{openDropdown === 'sort' ? 'expand_less' : 'expand_more'}</span>
+                )}
+              </button>
+              {openDropdown === 'sort' && (
+                <div className="absolute top-full left-0 mt-2 w-48 bg-white rounded-2xl shadow-xl border border-gray-100 py-2 z-30">
+                  {[
+                    { value: 'asc' as const, label: 'Giá thấp → cao', icon: 'arrow_upward' },
+                    { value: 'desc' as const, label: 'Giá cao → thấp', icon: 'arrow_downward' },
+                  ].map((opt) => (
+                    <button
+                      key={opt.value}
+                      onClick={() => { setSortOrder(opt.value); setOpenDropdown(null); }}
+                      className={`w-full text-left px-4 py-2.5 text-sm transition flex items-center gap-2 ${
+                        sortOrder === opt.value ? 'text-black font-bold bg-gray-50' : 'text-gray-600 hover:bg-gray-50 hover:text-black'
+                      }`}
+                    >
+                      <span className="material-symbols-outlined text-sm">{opt.icon}</span>
+                      {opt.label}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Clear all */}
+            {(selectedPriceRange || filterDiscount || sortOrder !== 'none') && (
+              <button
+                onClick={() => { setSelectedPriceRange(null); setFilterDiscount(false); setSortOrder('none'); setOpenDropdown(null); }}
+                className="flex items-center gap-1.5 px-4 py-2 rounded-full border border-dashed border-gray-300 text-sm text-gray-400 hover:text-black hover:border-black transition"
+              >
+                <span className="material-symbols-outlined text-base">filter_alt_off</span>
+                Xóa bộ lọc
+              </button>
+            )}
+          </div>
+
+          {/* Close dropdown when clicking outside */}
+          {openDropdown && (
+            <div className="fixed inset-0 z-20" onClick={() => setOpenDropdown(null)} />
+          )}
+
           {loading && (
             <div className="flex items-center justify-center py-20">
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
@@ -149,25 +349,10 @@ const Shop: React.FC = () => {
 
           {!loading && !error && (
             <>
-              <div className="mb-12">
-                <h1 className="text-4xl font-light uppercase tracking-tight text-black">
-                  {activeCategoryName ? (
-                    <>Danh mục: <span className="font-bold">{activeCategoryName}</span></>
-                  ) : searchFilter ? (
-                    <>Kết quả tìm kiếm cho: <span className="font-bold">"{searchFilter}"</span></>
-                  ) : (
-                    <>Tất cả <span className="font-bold">Sản phẩm</span></>
-                  )}
-                </h1>
-                <p className="text-gray-400 mt-2 text-[10px] font-bold uppercase tracking-[0.2em]">
-                  Hiển thị {pagedData ? `${pagedData.totalElements} sản phẩm` : `${products.length} sản phẩm`}
-                </p>
-              </div>
-
               {products.length > 0 ? (
                 <>
                   <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-8">
-                    {products.map(product => (
+                    {products.map((product) => (
                       <ProductCard key={product.productId} product={product} />
                     ))}
                   </div>
@@ -185,8 +370,8 @@ const Shop: React.FC = () => {
                   <span className="material-symbols-outlined text-6xl text-gray-200 mb-4">inventory_2</span>
                   <h2 className="text-xl font-bold text-gray-400 uppercase tracking-widest">Không tìm thấy sản phẩm nào</h2>
                   <p className="text-gray-400 mt-2">Vui lòng thử lại với bộ lọc khác</p>
-                  <button 
-                    onClick={() => navigate('/shop')}
+                  <button
+                    onClick={() => { navigate('/shop'); setSelectedPriceRange(null); setFilterDiscount(false); setSortOrder('none'); }}
                     className="mt-6 px-8 py-3 bg-black text-white text-[11px] font-bold uppercase tracking-widest rounded-xl hover:bg-gray-800 transition"
                   >
                     Xem tất cả sản phẩm
