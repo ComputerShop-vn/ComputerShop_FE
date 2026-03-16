@@ -9,4 +9,8 @@ export const otpService = {
   verifyOtp: async (email: string, otp: string): Promise<void> => {
     await apiClient.post(API_ENDPOINTS.OTP_VERIFY, { email, otp: parseInt(otp) });
   },
+
+  resetPassword: async (email: string, newPassword: string, confirmPassword: string): Promise<void> => {
+    await apiClient.post(API_ENDPOINTS.FORGOT_PASSWORD_RESET(email), { newPassword, confirmPassword });
+  },
 };

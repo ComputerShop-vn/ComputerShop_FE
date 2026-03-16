@@ -13,6 +13,7 @@ const Login: React.FC = () => {
   const { login } = useAuth();
   const location = useLocation();
   const registeredSuccess = (location.state as any)?.registered === true;
+  const passwordResetSuccess = (location.state as any)?.passwordReset === true;
 
   const toggleDarkMode = () => {
     setIsDarkMode(!isDarkMode);
@@ -133,6 +134,11 @@ const Login: React.FC = () => {
                     Đăng ký thành công! Vui lòng đăng nhập.
                   </p>
                 )}
+                {passwordResetSuccess && (
+                  <p className="text-xs text-green-700 font-bold bg-green-50 dark:bg-green-900/20 p-3 rounded">
+                    Đặt lại mật khẩu thành công! Vui lòng đăng nhập.
+                  </p>
+                )}
                 {error && (
                   <p className="text-xs text-red-500 font-bold bg-red-50 dark:bg-red-900/20 p-3 rounded">{error}</p>
                 )}
@@ -155,9 +161,9 @@ const Login: React.FC = () => {
                     <label className="block text-[10px] font-bold uppercase tracking-widest text-gray-400">
                       MẬT KHẨU
                     </label>
-                    <a href="#" className="text-[10px] font-bold text-gray-400 hover:text-black dark:hover:text-white transition uppercase tracking-widest">
+                    <Link to="/forgot-password" className="text-[10px] font-bold text-gray-400 hover:text-black dark:hover:text-white transition uppercase tracking-widest">
                       Quên mật khẩu?
-                    </a>
+                    </Link>
                   </div>
                   <input 
                     type="password" 
