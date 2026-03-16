@@ -27,7 +27,7 @@ const AdminAttributes: React.FC = () => {
         const data = await attributeService.getAllAttributesPaged(page, 10);
         setAttributes(data.content);
         setTotalPages(data.totalPages);
-        setCurrentPage(data.page);
+        setCurrentPage(data.number);
       } catch {
         const all = await attributeService.getAllAttributes();
         const size = 10;

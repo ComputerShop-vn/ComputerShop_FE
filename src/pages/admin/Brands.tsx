@@ -37,7 +37,7 @@ const AdminBrands: React.FC = () => {
         const data = await brandService.getAllBrandsPaged(page, 10);
         setBrands(data.content);
         setTotalPages(data.totalPages);
-        setCurrentPage(data.page);
+        setCurrentPage(data.number);
       } catch {
         // Fallback: backend /brands/paged route conflicts with /brands/{id}
         const all = await brandService.getAllBrands();

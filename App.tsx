@@ -15,7 +15,6 @@ import AdminBrands from './src/pages/admin/Brands';
 import AdminCategories from './src/pages/admin/Categories';
 import AdminPromotions from './src/pages/admin/Promotions';
 import AdminAttributes from './src/pages/admin/Attributes';
-import AdminRoles from './src/pages/admin/Roles';
 import AdminBlogs from './src/pages/admin/Blogs';
 import AdminInstallmentPackages from './src/pages/admin/InstallmentPackages';
 import Login from './src/pages/auth/Login';
@@ -57,7 +56,6 @@ const App: React.FC = () => {
               <Route path="/admin/promotions" element={<AdminPromotions />} />
               <Route path="/admin/installment-packages" element={<AdminInstallmentPackages />} />
               <Route path="/admin/attributes" element={<AdminAttributes />} />
-              <Route path="/admin/roles" element={<AdminRoles />} />
               <Route path="/admin/blogs" element={<AdminBlogs />} />
               <Route path="/admin/users" element={<AdminUsers />} />
 

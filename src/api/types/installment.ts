@@ -1,4 +1,4 @@
-// Installment Package API Types
+// Installment Package API Types — aligned with backend DTOs
 
 export interface InstallmentPackageResponse {
   packageId: number;
@@ -6,12 +6,8 @@ export interface InstallmentPackageResponse {
   durationMonths: number;
   interestRate: number;
   minOrderAmount: number;
-  maxOrderAmount?: number;
-  downPaymentPercent?: number; // % trả trước (0 nếu không có)
-  description?: string;
-  active: boolean;
-  createdAt?: string;
-  updatedAt?: string;
+  downPaymentPercentage: number;
+  active: boolean; // Jackson serializes boolean isActive() getter as "active"
 }
 
 export interface InstallmentPackageRequest {
@@ -19,10 +15,8 @@ export interface InstallmentPackageRequest {
   durationMonths: number;
   interestRate: number;
   minOrderAmount: number;
-  maxOrderAmount?: number;
-  downPaymentPercent?: number;
-  description?: string;
-  isActive?: boolean;
+  downPaymentPercentage: number;
+  isActive: boolean; // request field stays isActive
 }
 
 export interface InstallmentCalculateRequest {
@@ -38,12 +32,13 @@ export interface InstallmentScheduleItem {
 }
 
 export interface InstallmentPreviewResponse {
-  packageId: number;
-  durationMonths: number;
-  interestRate: number;
+  orderAmount: number;
   downPaymentPercentage: number;
   downPaymentAmount: number;
+  remainingBalance: number;
   monthlyInstallmentAmount: number;
+  interestRate: number;
+  durationMonths: number;
   totalPayableAmount: number;
   schedule: InstallmentScheduleItem[];
 }

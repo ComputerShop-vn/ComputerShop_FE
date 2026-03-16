@@ -23,7 +23,7 @@ const AdminCategories: React.FC = () => {
         const data = await categoryService.getAllCategoriesPaged(page, 10);
         setCategories(data.content);
         setTotalPages(data.totalPages);
-        setCurrentPage(data.page);
+        setCurrentPage(data.number);
       } catch {
         const all = await categoryService.getAllCategories();
         const size = 10;

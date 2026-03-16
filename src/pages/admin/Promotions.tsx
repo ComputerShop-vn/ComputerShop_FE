@@ -49,11 +49,26 @@ const AdminPromotions: React.FC = () => {
     try {
       setLoading(true);
       setError(null);
-      const data = await promotionService.getAllPromotionsPaged({ page, size: PAGE_SIZE });
-      setPagedData(data);
-      setPromotions(data.content);
+      try {
+        const data = await promotionService.getAllPromotionsPaged({ page, size: PAGE_SIZE });
+        setPagedData(data);
+        setPromotions(data.content);
+      } catch {
+        const all = await promotionService.getAllPromotions();
+        const start = page * PAGE_SIZE;
+        const content = all.slice(start, start + PAGE_SIZE);
+        setPromotions(content);
+        setPagedData({
+          content,
+          page,
+          size: PAGE_SIZE,
+          number: page,
+          totalElements: all.length,
+          totalPages: Math.ceil(all.length / PAGE_SIZE),
+        });
+      }
     } catch (err: any) {
-      setError(err.message || 'Failed to load promotions');
+      setError(err.message || 'Không thể tải danh sách khuyến mãi');
     } finally {
       setLoading(false);
     }

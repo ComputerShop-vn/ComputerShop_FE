@@ -55,15 +55,32 @@ const AdminProducts: React.FC = () => {
     try {
       setLoading(true);
       setError(null);
-      const data = await productService.getProductsPaged({
-        page,
-        size: PAGE_SIZE,
-        categoryId: selectedCategoryId || undefined,
-      });
-      setPagedData(data);
-      setProducts(data.content);
+      try {
+        const data = await productService.getProductsPaged({
+          page,
+          size: PAGE_SIZE,
+          categoryId: selectedCategoryId || undefined,
+        });
+        setPagedData(data);
+        setProducts(data.content);
+      } catch {
+        const all = await productService.getAllProducts(
+          selectedCategoryId ? { categoryId: selectedCategoryId } : undefined
+        );
+        const start = page * PAGE_SIZE;
+        const content = all.slice(start, start + PAGE_SIZE);
+        setProducts(content);
+        setPagedData({
+          content,
+          page,
+          size: PAGE_SIZE,
+          number: page,
+          totalElements: all.length,
+          totalPages: Math.ceil(all.length / PAGE_SIZE),
+        });
+      }
     } catch (err: any) {
-      setError(err.message || 'Failed to load products');
+      setError(err.message || 'Không thể tải danh sách sản phẩm');
     } finally {
       setLoading(false);
     }
