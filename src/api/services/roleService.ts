@@ -1,6 +1,7 @@
 // Role Service
 import { apiClient } from '../client';
 import { API_ENDPOINTS } from '../config';
+import { PagedResponse } from '../types/common';
 import { RoleResponse, RoleCreationRequest, RoleUpdateRequest } from '../types/role';
 
 export const roleService = {
@@ -11,6 +12,15 @@ export const roleService = {
       true
     );
     return response.result || [];
+  },
+
+  // Get all roles paged (requires ADMIN)
+  getAllRolesPaged: async (page = 0, size = 10): Promise<PagedResponse<RoleResponse>> => {
+    const response = await apiClient.get<PagedResponse<RoleResponse>>(
+      `${API_ENDPOINTS.ROLES_PAGED}?page=${page}&size=${size}`,
+      true
+    );
+    return response.result!;
   },
 
   // Get role by ID (requires ADMIN)

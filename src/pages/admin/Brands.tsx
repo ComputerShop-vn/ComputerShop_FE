@@ -1,12 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import AdminLayout from '../../components/layout/AdminLayout';
 import { brandService } from '../../api/services/brandService';
+import Pagination from '../../components/ui/Pagination';
 import { BrandResponse, BrandCreationRequest, BrandUpdateRequest } from '../../api/types/brand';
 
 const AdminBrands: React.FC = () => {
   const [brands, setBrands] = useState<BrandResponse[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [currentPage, setCurrentPage] = useState(0);
+  const [totalPages, setTotalPages] = useState(0);
   const [showAddModal, setShowAddModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [selectedBrand, setSelectedBrand] = useState<BrandResponse | null>(null);
@@ -26,13 +29,14 @@ const AdminBrands: React.FC = () => {
     return `${apiBaseUrl}${logoPath.startsWith('/') ? '' : '/'}${logoPath}`;
   };
 
-  const fetchBrands = async () => {
+  const fetchBrands = async (page = 0) => {
     try {
       setLoading(true);
       setError(null);
-      const data = await brandService.getAllBrands();
-      console.log('Brands data:', data); // Debug log
-      setBrands(data);
+      const data = await brandService.getAllBrandsPaged(page, 10);
+      setBrands(data.content);
+      setTotalPages(data.totalPages);
+      setCurrentPage(data.page);
     } catch (err: any) {
       setError(err.message || 'Failed to load brands');
       console.error('Error fetching brands:', err);
@@ -56,7 +60,7 @@ const AdminBrands: React.FC = () => {
       await brandService.createBrand(request, formData.logo || undefined);
       setShowAddModal(false);
       setFormData({ brandName: '', logo: null });
-      fetchBrands();
+      fetchBrands(currentPage);
     } catch (err: any) {
       alert(err.message || 'Failed to create brand');
     }
@@ -74,7 +78,7 @@ const AdminBrands: React.FC = () => {
       setShowEditModal(false);
       setSelectedBrand(null);
       setFormData({ brandName: '', logo: null });
-      fetchBrands();
+      fetchBrands(currentPage);
     } catch (err: any) {
       alert(err.message || 'Failed to update brand');
     }
@@ -85,7 +89,7 @@ const AdminBrands: React.FC = () => {
 
     try {
       await brandService.deleteBrand(id);
-      fetchBrands();
+      fetchBrands(currentPage);
     } catch (err: any) {
       alert(err.message || 'Failed to delete brand');
     }
@@ -192,6 +196,8 @@ const AdminBrands: React.FC = () => {
           </table>
         </div>
       )}
+
+      <Pagination currentPage={currentPage} totalPages={totalPages} onPageChange={(p) => fetchBrands(p)} />
 
       {/* Add Modal */}
       {showAddModal && (

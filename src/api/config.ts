@@ -6,39 +6,49 @@ export const API_VERSION = '/api/v1';
 export const API_ENDPOINTS = {
   // Attributes
   ATTRIBUTES: `${API_VERSION}/attributes`,
+  ATTRIBUTES_PAGED: `${API_VERSION}/attributes/paged`,
   ATTRIBUTE_BY_ID: (id: number) => `${API_VERSION}/attributes/${id}`,
   
-  // Products (to be implemented)
+  // Products
   PRODUCTS: `${API_VERSION}/products`,
+  PRODUCTS_PAGED: `${API_VERSION}/products/paged`,
   PRODUCT_BY_ID: (id: number) => `${API_VERSION}/products/${id}`,
   PRODUCTS_SEARCH: `${API_VERSION}/products/search`,
+  PRODUCTS_SEARCH_PAGED: `${API_VERSION}/products/search/paged`,
   
   // Categories
   CATEGORIES: `${API_VERSION}/categories`,
+  CATEGORIES_PAGED: `${API_VERSION}/categories/paged`,
   CATEGORY_BY_ID: (id: number) => `${API_VERSION}/categories/${id}`,
   
   // Brands (to be implemented)
   BRANDS: `${API_VERSION}/brands`,
+  BRANDS_PAGED: `${API_VERSION}/brands/paged`,
   BRAND_BY_ID: (id: number) => `${API_VERSION}/brands/${id}`,
   
   // Orders
   ORDERS: `${API_VERSION}/orders`,
+  ORDERS_PAGED: `${API_VERSION}/orders/paged`,
   ORDERS_ME: `${API_VERSION}/orders/me`,
+  ORDERS_ME_PAGED: `${API_VERSION}/orders/me/paged`,
   ORDER_BY_ID: (id: number) => `${API_VERSION}/orders/${id}`,
   ORDER_UPDATE_STATUS: (id: number) => `${API_VERSION}/orders/${id}/status`,
   ORDER_CANCEL: (id: number) => `${API_VERSION}/orders/${id}/cancel`,
   
   // Users
   USERS: `${API_VERSION}/users`,
+  USERS_PAGED: `${API_VERSION}/users/paged`,
   USER_BY_ID: (id: number) => `${API_VERSION}/users/${id}`,
   USER_ME: `${API_VERSION}/users/me`,
   
   // Roles
   ROLES: `${API_VERSION}/roles`,
+  ROLES_PAGED: `${API_VERSION}/roles/paged`,
   ROLE_BY_ID: (id: number) => `${API_VERSION}/roles/${id}`,
   
   // Blogs
   BLOGS: `${API_VERSION}/blogs`,
+  BLOGS_PAGED: `${API_VERSION}/blogs/paged`,
   BLOG_BY_ID: (id: number) => `${API_VERSION}/blogs/${id}`,
   BLOGS_BY_USER: (userId: number) => `${API_VERSION}/blogs/user/${userId}`,
   
@@ -49,11 +59,13 @@ export const API_ENDPOINTS = {
   
   // Installment Packages
   INSTALLMENT_PACKAGES: `${API_VERSION}/installment-packages`,
+  INSTALLMENT_PACKAGES_PAGED: `${API_VERSION}/installment-packages/paged`,
   INSTALLMENT_PACKAGES_ACTIVE: `${API_VERSION}/installment-packages/active`,
   INSTALLMENT_PACKAGE_BY_ID: (id: number) => `${API_VERSION}/installment-packages/${id}`,
   
   // Promotions
   PROMOTIONS: `${API_VERSION}/promotions`,
+  PROMOTIONS_PAGED: `${API_VERSION}/promotions/paged`,
   PROMOTION_BY_ID: (id: number) => `${API_VERSION}/promotions/${id}`,
   PROMOTION_BY_CODE: (code: string) => `${API_VERSION}/promotions/code/${code}`,
   PROMOTION_ADD_TO_PRODUCTS: `${API_VERSION}/promotions/add-to-products`,

@@ -1,34 +1,59 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import ProductCard from '../../components/ui/ProductCard';
 import { productService } from '../../api/services/productService';
 import { categoryService } from '../../api/services/categoryService';
 import { ProductResponse } from '../../api/types/product';
 import { CategoryResponse } from '../../api/types/category';
+import { PagedResponse } from '../../api/types/common';
+import Pagination from '../../components/ui/Pagination';
+
+const PAGE_SIZE = 12;
 
 const Shop: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const queryParams = new URLSearchParams(location.search);
-  const categoryFilter = queryParams.get('category'); // categoryId as string
+  const categoryFilter = queryParams.get('category');
   const searchFilter = queryParams.get('search');
 
+  const [pagedData, setPagedData] = useState<PagedResponse<ProductResponse> | null>(null);
   const [products, setProducts] = useState<ProductResponse[]>([]);
+  const [currentPage, setCurrentPage] = useState(0);
   const [categories, setCategories] = useState<CategoryResponse[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    setCurrentPage(0);
+  }, [categoryFilter, searchFilter]);
 
   useEffect(() => {
     const fetchData = async () => {
       try {
         setLoading(true);
         setError(null);
-        const [productsData, categoriesData] = await Promise.all([
-          productService.getAllProducts(),
-          categoryService.getAllCategories(),
-        ]);
-        setProducts(productsData);
-        setCategories(categoriesData);
+
+        const categoryId = categoryFilter ? parseInt(categoryFilter) : undefined;
+
+        let productsData: PagedResponse<ProductResponse>;
+        if (searchFilter) {
+          productsData = await productService.searchProductsPaged(searchFilter, { page: currentPage, size: PAGE_SIZE });
+        } else {
+          productsData = await productService.getProductsPaged({
+            page: currentPage,
+            size: PAGE_SIZE,
+            categoryId: !isNaN(categoryId!) ? categoryId : undefined,
+          });
+        }
+
+        setPagedData(productsData);
+        setProducts(productsData.content);
+
+        if (categories.length === 0) {
+          const cats = await categoryService.getAllCategories();
+          setCategories(cats);
+        }
       } catch (err: any) {
         setError(err.message || 'Failed to load data');
       } finally {
@@ -36,33 +61,7 @@ const Shop: React.FC = () => {
       }
     };
     fetchData();
-  }, []);
-
-  const filteredProducts = useMemo(() => {
-    let result = products;
-
-    if (categoryFilter) {
-      const catId = parseInt(categoryFilter);
-      if (!isNaN(catId)) {
-        result = result.filter(p => p.categoryId === catId);
-      } else {
-        // fallback: filter by name (từ header dropdown)
-        result = result.filter(p =>
-          p.categoryName?.toLowerCase().includes(categoryFilter.toLowerCase())
-        );
-      }
-    }
-
-    if (searchFilter) {
-      result = result.filter(p =>
-        p.name?.toLowerCase().includes(searchFilter.toLowerCase()) ||
-        p.brandName?.toLowerCase().includes(searchFilter.toLowerCase()) ||
-        p.categoryName?.toLowerCase().includes(searchFilter.toLowerCase())
-      );
-    }
-
-    return result;
-  }, [products, categoryFilter, searchFilter]);
+  }, [currentPage, categoryFilter, searchFilter]);
 
   const handleCategoryChange = (categoryId: number | null) => {
     if (categoryId !== null) {
@@ -148,16 +147,26 @@ const Shop: React.FC = () => {
                   )}
                 </h1>
                 <p className="text-gray-400 mt-2 text-[10px] font-bold uppercase tracking-[0.2em]">
-                  Hiển thị {filteredProducts.length} sản phẩm
+                  Hiển thị {pagedData ? `${pagedData.totalElements} sản phẩm` : `${products.length} sản phẩm`}
                 </p>
               </div>
 
-              {filteredProducts.length > 0 ? (
-                <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-8">
-                  {filteredProducts.map(product => (
-                    <ProductCard key={product.productId} product={product} />
-                  ))}
-                </div>
+              {products.length > 0 ? (
+                <>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-8">
+                    {products.map(product => (
+                      <ProductCard key={product.productId} product={product} />
+                    ))}
+                  </div>
+                  {pagedData && pagedData.totalPages > 1 && (
+                    <Pagination
+                      currentPage={currentPage}
+                      totalPages={pagedData.totalPages}
+                      onPageChange={setCurrentPage}
+                      className="mt-12"
+                    />
+                  )}
+                </>
               ) : (
                 <div className="py-32 text-center bg-gray-50 rounded-3xl border border-dashed border-gray-200">
                   <span className="material-symbols-outlined text-6xl text-gray-200 mb-4">inventory_2</span>

@@ -8,6 +8,14 @@ import {
   ProductUpdateRequest,
   ProductFilterParams 
 } from '../types/product';
+import { PagedResponse } from '../types/common';
+
+export interface ProductPageParams extends ProductFilterParams {
+  page?: number;
+  size?: number;
+  sortBy?: string;
+  sortDir?: 'asc' | 'desc';
+}
 
 export const productService = {
   // Get all products with optional filters (public)
@@ -17,10 +25,29 @@ export const productService = {
     if (filters?.brandId) params.append('brandId', filters.brandId.toString());
     if (filters?.minPrice) params.append('minPrice', filters.minPrice.toString());
     if (filters?.maxPrice) params.append('maxPrice', filters.maxPrice.toString());
-    
     const url = params.toString() ? `${API_ENDPOINTS.PRODUCTS}?${params}` : API_ENDPOINTS.PRODUCTS;
     const response = await apiClient.get<ProductResponse[]>(url);
     return response.result || [];
+  },
+
+  // Get products paged with optional filters (public)
+  getProductsPaged: async (params: ProductPageParams = {}): Promise<PagedResponse<ProductResponse>> => {
+    const { page = 0, size = 12, sortBy = 'productId', sortDir = 'asc', categoryId, brandId, minPrice, maxPrice } = params;
+    const query = new URLSearchParams({ page: String(page), size: String(size), sortBy, sortDir });
+    if (categoryId) query.append('categoryId', String(categoryId));
+    if (brandId) query.append('brandId', String(brandId));
+    if (minPrice) query.append('minPrice', String(minPrice));
+    if (maxPrice) query.append('maxPrice', String(maxPrice));
+    const response = await apiClient.get<PagedResponse<ProductResponse>>(`${API_ENDPOINTS.PRODUCTS_PAGED}?${query}`);
+    return response.result!;
+  },
+
+  // Search products paged (public)
+  searchProductsPaged: async (keyword: string, params: { page?: number; size?: number; sortBy?: string; sortDir?: string } = {}): Promise<PagedResponse<ProductResponse>> => {
+    const { page = 0, size = 12, sortBy = 'productId', sortDir = 'asc' } = params;
+    const query = new URLSearchParams({ keyword: encodeURIComponent(keyword), page: String(page), size: String(size), sortBy, sortDir });
+    const response = await apiClient.get<PagedResponse<ProductResponse>>(`${API_ENDPOINTS.PRODUCTS_SEARCH_PAGED}?${query}`);
+    return response.result!;
   },
 
   // Get product by ID with full details (public)

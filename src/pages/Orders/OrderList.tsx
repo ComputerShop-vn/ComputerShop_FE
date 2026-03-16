@@ -3,6 +3,10 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { orderService } from '../../api/services/orderService';
 import { OrderResponse } from '../../api/types/order';
+import { PagedResponse } from '../../api/types/common';
+import Pagination from '../../components/ui/Pagination';
+
+const PAGE_SIZE = 10;
 
 const statusLabel: Record<string, { label: string; color: string }> = {
   PENDING:   { label: 'Chờ xác nhận', color: 'bg-yellow-100 text-yellow-700' },
@@ -17,20 +21,20 @@ const statusLabel: Record<string, { label: string; color: string }> = {
 const OrderList: React.FC = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const [pagedData, setPagedData] = useState<PagedResponse<OrderResponse> | null>(null);
   const [orders, setOrders] = useState<OrderResponse[]>([]);
+  const [currentPage, setCurrentPage] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
   useEffect(() => {
-    if (!user) {
-      navigate('/login');
-      return;
-    }
-    orderService.getMyOrders()
-      .then(setOrders)
+    if (!user) { navigate('/login'); return; }
+    setLoading(true);
+    orderService.getMyOrdersPaged({ page: currentPage, size: PAGE_SIZE })
+      .then(data => { setPagedData(data); setOrders(data.content); })
       .catch(() => setError('Không thể tải danh sách đơn hàng.'))
       .finally(() => setLoading(false));
-  }, [user, navigate]);
+  }, [user, navigate, currentPage]);
 
   if (loading) {
     return (
@@ -95,6 +99,14 @@ const OrderList: React.FC = () => {
               </div>
             );
           })}
+          {pagedData && pagedData.totalPages > 1 && (
+            <Pagination
+              currentPage={currentPage}
+              totalPages={pagedData.totalPages}
+              onPageChange={setCurrentPage}
+              className="pt-4"
+            />
+          )}
         </div>
       )}
     </div>

@@ -1,6 +1,7 @@
 // Brand Service
 import { apiClient } from '../client';
 import { API_ENDPOINTS } from '../config';
+import { PagedResponse } from '../types/common';
 import { BrandResponse, BrandCreationRequest, BrandUpdateRequest } from '../types/brand';
 
 export const brandService = {
@@ -10,6 +11,14 @@ export const brandService = {
       API_ENDPOINTS.BRANDS
     );
     return response.result || [];
+  },
+
+  // Get all brands paged (public)
+  getAllBrandsPaged: async (page = 0, size = 10): Promise<PagedResponse<BrandResponse>> => {
+    const response = await apiClient.get<PagedResponse<BrandResponse>>(
+      `${API_ENDPOINTS.BRANDS_PAGED}?page=${page}&size=${size}`
+    );
+    return response.result!;
   },
 
   // Get brand by ID (public)

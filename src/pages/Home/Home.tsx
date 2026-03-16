@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import ProductCard from '../../components/ui/ProductCard';
@@ -10,18 +9,10 @@ const Home: React.FC = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const fetchProducts = async () => {
-      try {
-        const data = await productService.getAllProducts();
-        setProducts(data.slice(0, 8)); // Show first 8 products
-      } catch (err) {
-        console.error('Error fetching products:', err);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchProducts();
+    productService.getProductsPaged({ page: 0, size: 8 })
+      .then(data => setProducts(data.content))
+      .catch(err => console.error('Error fetching products:', err))
+      .finally(() => setLoading(false));
   }, []);
   return (
     <div className="space-y-16 pb-20">

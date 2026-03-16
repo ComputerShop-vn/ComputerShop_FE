@@ -2,9 +2,15 @@ import React, { useState, useEffect } from 'react';
 import AdminLayout from '../../components/layout/AdminLayout';
 import { userService } from '../../api/services/userService';
 import { UserResponse } from '../../api/types/user';
+import { PagedResponse } from '../../api/types/common';
+import Pagination from '../../components/ui/Pagination';
+
+const PAGE_SIZE = 10;
 
 const AdminUsers: React.FC = () => {
+  const [pagedData, setPagedData] = useState<PagedResponse<UserResponse> | null>(null);
   const [users, setUsers] = useState<UserResponse[]>([]);
+  const [currentPage, setCurrentPage] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showAddModal, setShowAddModal] = useState(false);
@@ -18,31 +24,28 @@ const AdminUsers: React.FC = () => {
     status: 'ACTIVE',
   });
 
-  const fetchUsers = async () => {
+  const fetchUsers = async (page = currentPage) => {
     try {
       setLoading(true);
       setError(null);
-      const data = await userService.getAllUsers();
-      console.log('Users data:', data);
-      setUsers(data);
+      const data = await userService.getAllUsersPaged({ page, size: PAGE_SIZE });
+      setPagedData(data);
+      setUsers(data.content);
     } catch (err: any) {
       setError(err.message || 'Failed to load users');
-      console.error('Error fetching users:', err);
     } finally {
       setLoading(false);
     }
   };
 
-  useEffect(() => {
-    fetchUsers();
-  }, []);
+  useEffect(() => { fetchUsers(currentPage); }, [currentPage]);
 
   const handleDelete = async (id: number) => {
     if (!window.confirm('Bạn có chắc chắn muốn xóa người dùng này?')) return;
 
     try {
       await userService.deleteUser(id);
-      fetchUsers();
+      fetchUsers(currentPage);
     } catch (err: any) {
       alert(err.message || 'Failed to delete user');
     }
@@ -65,7 +68,8 @@ const AdminUsers: React.FC = () => {
       
       setShowAddModal(false);
       resetForm();
-      fetchUsers();
+      fetchUsers(0);
+      setCurrentPage(0);
     } catch (err: any) {
       alert(err.message || 'Failed to create user');
     }
@@ -104,7 +108,7 @@ const AdminUsers: React.FC = () => {
       setShowEditModal(false);
       setSelectedUser(null);
       resetForm();
-      fetchUsers();
+      fetchUsers(currentPage);
     } catch (err: any) {
       alert(err.message || 'Failed to update user');
     }
@@ -163,7 +167,7 @@ const AdminUsers: React.FC = () => {
   return (
     <AdminLayout 
       title="Quản Lý Người Dùng" 
-      subtitle={`Quản lý ${users.length} tài khoản khách hàng và nhân viên hệ thống.`}
+      subtitle={`Quản lý ${pagedData?.totalElements ?? users.length} tài khoản khách hàng và nhân viên hệ thống.`}
       requiredRole="admin"
       actions={
         <button 
@@ -261,6 +265,18 @@ const AdminUsers: React.FC = () => {
               </tbody>
             </table>
           </div>
+          {pagedData && (
+            <div className="px-6 py-4 border-t border-gray-100 flex items-center justify-between">
+              <p className="text-xs text-gray-400">
+                Tổng {pagedData.totalElements} người dùng
+              </p>
+              <Pagination
+                currentPage={currentPage}
+                totalPages={pagedData.totalPages}
+                onPageChange={setCurrentPage}
+              />
+            </div>
+          )}
         </div>
       )}
 

@@ -3,6 +3,10 @@ import { useNavigate } from 'react-router-dom';
 import AdminLayout from '../../components/layout/AdminLayout';
 import { orderService } from '../../api/services/orderService';
 import { OrderResponse } from '../../api/types/order';
+import { PagedResponse } from '../../api/types/common';
+import Pagination from '../../components/ui/Pagination';
+
+const PAGE_SIZE = 10;
 
 const statusConfig: Record<string, { label: string; color: string }> = {
   PENDING:   { label: 'Chờ xác nhận', color: 'bg-orange-100 text-orange-600' },
@@ -16,17 +20,20 @@ const statusConfig: Record<string, { label: string; color: string }> = {
 
 const AdminOrders: React.FC = () => {
   const navigate = useNavigate();
+  const [pagedData, setPagedData] = useState<PagedResponse<OrderResponse> | null>(null);
   const [orders, setOrders] = useState<OrderResponse[]>([]);
+  const [currentPage, setCurrentPage] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [filter, setFilter] = useState<'ALL' | 'FULL' | 'INSTALLMENT'>('ALL');
 
-  const fetchOrders = async () => {
+  const fetchOrders = async (page = currentPage) => {
     try {
       setLoading(true);
       setError(null);
-      const data = await orderService.getAllOrders();
-      setOrders(data);
+      const data = await orderService.getAllOrdersPaged({ page, size: PAGE_SIZE });
+      setPagedData(data);
+      setOrders(data.content);
     } catch (err: any) {
       setError(err.message || 'Failed to load orders');
     } finally {
@@ -34,12 +41,12 @@ const AdminOrders: React.FC = () => {
     }
   };
 
-  useEffect(() => { fetchOrders(); }, []);
+  useEffect(() => { fetchOrders(currentPage); }, [currentPage]);
 
   const updateStatus = async (orderId: number, status: string) => {
     try {
       await orderService.updateOrderStatus(orderId, { status });
-      fetchOrders();
+      fetchOrders(currentPage);
     } catch (err: any) {
       alert(err.message || 'Failed to update order status');
     }
@@ -59,7 +66,7 @@ const AdminOrders: React.FC = () => {
         {(['ALL', 'FULL', 'INSTALLMENT'] as const).map(f => (
           <button
             key={f}
-            onClick={() => setFilter(f)}
+            onClick={() => { setFilter(f); setCurrentPage(0); }}
             className={`px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-widest transition ${
               filter === f ? 'bg-blue-600 text-white' : 'bg-white border border-gray-200 text-gray-500 hover:border-blue-300'
             }`}
@@ -81,7 +88,7 @@ const AdminOrders: React.FC = () => {
       {error && (
         <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-6">
           <p className="text-sm font-medium">{error}</p>
-          <button onClick={fetchOrders} className="text-xs underline mt-2">Thử lại</button>
+          <button onClick={() => fetchOrders(currentPage)} className="text-xs underline mt-2">Thử lại</button>
         </div>
       )}
 
@@ -173,6 +180,18 @@ const AdminOrders: React.FC = () => {
               )}
             </tbody>
           </table>
+          {pagedData && (
+            <div className="px-6 py-4 border-t border-gray-100 flex items-center justify-between">
+              <p className="text-xs text-gray-400">
+                Tổng {pagedData.totalElements} đơn hàng
+              </p>
+              <Pagination
+                currentPage={currentPage}
+                totalPages={pagedData.totalPages}
+                onPageChange={setCurrentPage}
+              />
+            </div>
+          )}
         </div>
       )}
     </AdminLayout>

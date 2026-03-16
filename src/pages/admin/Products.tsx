@@ -8,6 +8,10 @@ import { attributeService } from '../../api/services/attributeService';
 import { CategoryResponse } from '../../api/types/category';
 import { BrandResponse } from '../../api/types/brand';
 import { AttributeResponse } from '../../api/types/attribute';
+import { PagedResponse } from '../../api/types/common';
+import Pagination from '../../components/ui/Pagination';
+
+const PAGE_SIZE = 10;
 
 interface VariantForm {
   variantId?: number; // undefined = new variant
@@ -23,7 +27,9 @@ const emptyVariant = (): VariantForm => ({
 });
 
 const AdminProducts: React.FC = () => {
+  const [pagedData, setPagedData] = useState<PagedResponse<ProductResponse> | null>(null);
   const [products, setProducts] = useState<ProductResponse[]>([]);
+  const [currentPage, setCurrentPage] = useState(0);
   const [categories, setCategories] = useState<CategoryResponse[]>([]);
   const [brands, setBrands] = useState<BrandResponse[]>([]);
   const [attributes, setAttributes] = useState<AttributeResponse[]>([]);
@@ -45,12 +51,17 @@ const AdminProducts: React.FC = () => {
   const [editVariants, setEditVariants] = useState<VariantForm[]>([]);
   const [images, setImages] = useState<File[]>([]);
 
-  const fetchProducts = async () => {
+  const fetchProducts = async (page = currentPage) => {
     try {
       setLoading(true);
       setError(null);
-      const data = await productService.getAllProducts();
-      setProducts(data);
+      const data = await productService.getProductsPaged({
+        page,
+        size: PAGE_SIZE,
+        categoryId: selectedCategoryId || undefined,
+      });
+      setPagedData(data);
+      setProducts(data.content);
     } catch (err: any) {
       setError(err.message || 'Failed to load products');
     } finally {
@@ -59,7 +70,7 @@ const AdminProducts: React.FC = () => {
   };
 
   useEffect(() => {
-    fetchProducts();
+    fetchProducts(currentPage);
     Promise.all([
       categoryService.getAllCategories(),
       brandService.getAllBrands(),
@@ -69,21 +80,19 @@ const AdminProducts: React.FC = () => {
       setBrands(brnds);
       setAttributes(attrs);
     }).catch(console.error);
-  }, []);
+  }, [currentPage, selectedCategoryId]);
 
   const filteredProducts = products.filter((p) => {
-    const matchesSearch =
+    return !searchTerm ||
       p.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       p.brandName?.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesCategory = selectedCategoryId === 0 || p.categoryId === selectedCategoryId;
-    return matchesSearch && matchesCategory;
   });
 
   const handleDelete = async (id: number) => {
     if (!window.confirm('Bạn có chắc chắn muốn xóa sản phẩm này?')) return;
     try {
       await productService.deleteProduct(id);
-      fetchProducts();
+      fetchProducts(currentPage);
     } catch (err: any) {
       alert(err.message || 'Failed to delete product');
     }
@@ -193,7 +202,8 @@ const AdminProducts: React.FC = () => {
       }, images.length > 0 ? images : undefined);
       setShowAddModal(false);
       resetForm();
-      fetchProducts();
+      fetchProducts(0);
+      setCurrentPage(0);
     } catch (err: any) {
       alert(err.message || 'Failed to create product');
     }
@@ -237,7 +247,7 @@ const AdminProducts: React.FC = () => {
       setShowEditModal(false);
       setSelectedProduct(null);
       resetForm();
-      fetchProducts();
+      fetchProducts(currentPage);
     } catch (err: any) {
       alert(err.message || 'Failed to update product');
     }
@@ -292,7 +302,7 @@ const AdminProducts: React.FC = () => {
   return (
     <AdminLayout
       title="Danh Sách Sản Phẩm"
-      subtitle={`Quản lý ${products.length} sản phẩm trong hệ thống.`}
+      subtitle={`Quản lý ${pagedData?.totalElements ?? products.length} sản phẩm trong hệ thống.`}
       requiredRole="staff"
       actions={
         <button
@@ -319,7 +329,7 @@ const AdminProducts: React.FC = () => {
         <div className="flex items-center gap-3 w-full md:w-auto">
           <select
               value={selectedCategoryId}
-              onChange={(e) => setSelectedCategoryId(Number(e.target.value))}
+              onChange={(e) => { setSelectedCategoryId(Number(e.target.value)); setCurrentPage(0); }}
               className="border border-gray-200 rounded-lg pl-4 pr-10 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none transition appearance-none bg-no-repeat bg-[right_0.75rem_center] bg-[length:1em_1em]"
               style={{
                 backgroundImage: `url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e")`,
@@ -331,7 +341,7 @@ const AdminProducts: React.FC = () => {
               ))}
           </select>
           <button
-            onClick={() => { setSearchTerm(''); setSelectedCategoryId(0); }}
+            onClick={() => { setSearchTerm(''); setSelectedCategoryId(0); setCurrentPage(0); }}
             className="p-2 border border-gray-200 rounded-lg hover:bg-gray-50 transition"
           >
             <span className="material-symbols-outlined text-gray-600">filter_list_off</span>
@@ -425,6 +435,18 @@ const AdminProducts: React.FC = () => {
               </tbody>
             </table>
           </div>
+          {pagedData && (
+            <div className="px-6 py-4 border-t border-gray-100 flex items-center justify-between">
+              <p className="text-xs text-gray-400">
+                Tổng {pagedData.totalElements} sản phẩm
+              </p>
+              <Pagination
+                currentPage={currentPage}
+                totalPages={pagedData.totalPages}
+                onPageChange={setCurrentPage}
+              />
+            </div>
+          )}
         </div>
       )}
 

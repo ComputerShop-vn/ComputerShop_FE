@@ -2,9 +2,15 @@ import React, { useState, useEffect } from 'react';
 import AdminLayout from '../../components/layout/AdminLayout';
 import { blogService } from '../../api/services/blogService';
 import { BlogResponse, BlogCreationRequest, BlogUpdateRequest } from '../../api/types/blog';
+import { PagedResponse } from '../../api/types/common';
+import Pagination from '../../components/ui/Pagination';
+
+const PAGE_SIZE = 10;
 
 const AdminBlogs: React.FC = () => {
+  const [pagedData, setPagedData] = useState<PagedResponse<BlogResponse> | null>(null);
   const [blogs, setBlogs] = useState<BlogResponse[]>([]);
+  const [currentPage, setCurrentPage] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showAddModal, setShowAddModal] = useState(false);
@@ -12,23 +18,21 @@ const AdminBlogs: React.FC = () => {
   const [selectedBlog, setSelectedBlog] = useState<BlogResponse | null>(null);
   const [formData, setFormData] = useState({ title: '', content: '' });
 
-  const fetchBlogs = async () => {
+  const fetchBlogs = async (page = currentPage) => {
     try {
       setLoading(true);
       setError(null);
-      const data = await blogService.getAllBlogs();
-      setBlogs(data);
+      const data = await blogService.getAllBlogsPaged({ page, size: PAGE_SIZE });
+      setPagedData(data);
+      setBlogs(data.content);
     } catch (err: any) {
       setError(err.message || 'Failed to load blogs');
-      console.error('Error fetching blogs:', err);
     } finally {
       setLoading(false);
     }
   };
 
-  useEffect(() => {
-    fetchBlogs();
-  }, []);
+  useEffect(() => { fetchBlogs(currentPage); }, [currentPage]);
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -42,7 +46,8 @@ const AdminBlogs: React.FC = () => {
       await blogService.createBlog(request);
       setShowAddModal(false);
       setFormData({ title: '', content: '' });
-      fetchBlogs();
+      fetchBlogs(0);
+      setCurrentPage(0);
     } catch (err: any) {
       alert(err.message || 'Failed to create blog');
     }
@@ -61,7 +66,7 @@ const AdminBlogs: React.FC = () => {
       setShowEditModal(false);
       setSelectedBlog(null);
       setFormData({ title: '', content: '' });
-      fetchBlogs();
+      fetchBlogs(currentPage);
     } catch (err: any) {
       alert(err.message || 'Failed to update blog');
     }
@@ -72,7 +77,7 @@ const AdminBlogs: React.FC = () => {
 
     try {
       await blogService.deleteBlog(id);
-      fetchBlogs();
+      fetchBlogs(currentPage);
     } catch (err: any) {
       alert(err.message || 'Failed to delete blog');
     }
@@ -177,6 +182,18 @@ const AdminBlogs: React.FC = () => {
               )}
             </tbody>
           </table>
+          {pagedData && (
+            <div className="px-6 py-4 border-t border-gray-100 flex items-center justify-between">
+              <p className="text-xs text-gray-400">
+                Tổng {pagedData.totalElements} bài viết
+              </p>
+              <Pagination
+                currentPage={currentPage}
+                totalPages={pagedData.totalPages}
+                onPageChange={setCurrentPage}
+              />
+            </div>
+          )}
         </div>
       )}
 

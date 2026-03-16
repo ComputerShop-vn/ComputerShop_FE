@@ -9,14 +9,28 @@ import {
   AddPromotionToCategoryRequest,
   AddPromotionToBrandRequest,
 } from '../types/promotion';
+import { PagedResponse } from '../types/common';
+
+export interface PromotionPageParams {
+  page?: number;
+  size?: number;
+  sortBy?: string;
+  sortDir?: 'asc' | 'desc';
+}
 
 export const promotionService = {
   // Get all promotions
   getAllPromotions: async (): Promise<PromotionResponse[]> => {
-    const response = await apiClient.get<PromotionResponse[]>(
-      API_ENDPOINTS.PROMOTIONS
-    );
+    const response = await apiClient.get<PromotionResponse[]>(API_ENDPOINTS.PROMOTIONS);
     return response.result || [];
+  },
+
+  // Get promotions paged
+  getAllPromotionsPaged: async (params: PromotionPageParams = {}): Promise<PagedResponse<PromotionResponse>> => {
+    const { page = 0, size = 10, sortBy = 'promotionId', sortDir = 'desc' } = params;
+    const query = new URLSearchParams({ page: String(page), size: String(size), sortBy, sortDir });
+    const response = await apiClient.get<PagedResponse<PromotionResponse>>(`${API_ENDPOINTS.PROMOTIONS_PAGED}?${query}`);
+    return response.result!;
   },
 
   // Get promotion by ID

@@ -1,12 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import AdminLayout from '../../components/layout/AdminLayout';
 import { installmentService } from '../../api/services/installmentService';
+import Pagination from '../../components/ui/Pagination';
 import { InstallmentPackageResponse, InstallmentPackageRequest } from '../../api/types/installment';
 
 const AdminInstallmentPackages: React.FC = () => {
   const [packages, setPackages] = useState<InstallmentPackageResponse[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [currentPage, setCurrentPage] = useState(0);
+  const [totalPages, setTotalPages] = useState(0);
   const [showAddModal, setShowAddModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [selectedPackage, setSelectedPackage] = useState<InstallmentPackageResponse | null>(null);
@@ -21,13 +24,14 @@ const AdminInstallmentPackages: React.FC = () => {
     active: true,
   });
 
-  const fetchPackages = async () => {
+  const fetchPackages = async (page = 0) => {
     try {
       setLoading(true);
       setError(null);
-      const data = await installmentService.getAllPackages();
-      console.log('Installment packages data:', data); // Debug log
-      setPackages(data);
+      const data = await installmentService.getAllPackagesPaged(page, 10);
+      setPackages(data.content);
+      setTotalPages(data.totalPages);
+      setCurrentPage(data.page);
     } catch (err: any) {
       setError(err.message || 'Failed to load installment packages');
       console.error('Error fetching packages:', err);
@@ -57,13 +61,11 @@ const AdminInstallmentPackages: React.FC = () => {
       if (formData.maxOrderAmount > 0) request.maxOrderAmount = formData.maxOrderAmount;
       if (formData.description.trim()) request.description = formData.description.trim();
       
-      console.log('Creating package with request:', request);
       await installmentService.createPackage(request);
       setShowAddModal(false);
       resetForm();
-      fetchPackages();
+      fetchPackages(currentPage);
     } catch (err: any) {
-      console.error('Create error:', err); // Debug log
       alert(err.message || 'Failed to create installment package');
     }
   };
@@ -71,8 +73,6 @@ const AdminInstallmentPackages: React.FC = () => {
   const handleUpdate = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedPackage || !formData.name.trim()) return;
-
-    console.log('Updating package with ID:', selectedPackage.packageId); // Debug log
 
     try {
       const request: any = {
@@ -87,14 +87,12 @@ const AdminInstallmentPackages: React.FC = () => {
       if (formData.maxOrderAmount > 0) request.maxOrderAmount = formData.maxOrderAmount;
       if (formData.description.trim()) request.description = formData.description.trim();
       
-      console.log('Updating package with request:', request);
       await installmentService.updatePackage(selectedPackage.packageId, request);
       setShowEditModal(false);
       setSelectedPackage(null);
       resetForm();
-      fetchPackages();
+      fetchPackages(currentPage);
     } catch (err: any) {
-      console.error('Update error:', err); // Debug log
       alert(err.message || 'Failed to update installment package');
     }
   };
@@ -104,14 +102,13 @@ const AdminInstallmentPackages: React.FC = () => {
 
     try {
       await installmentService.deletePackage(id);
-      fetchPackages();
+      fetchPackages(currentPage);
     } catch (err: any) {
       alert(err.message || 'Failed to delete installment package');
     }
   };
 
   const openEditModal = (pkg: InstallmentPackageResponse) => {
-    console.log('Opening edit modal for package:', pkg); // Debug log
     setSelectedPackage(pkg);
     setFormData({
       name: pkg.name,
@@ -257,6 +254,8 @@ const AdminInstallmentPackages: React.FC = () => {
           </table>
         </div>
       )}
+
+      <Pagination currentPage={currentPage} totalPages={totalPages} onPageChange={(p) => fetchPackages(p)} />
 
       {/* Add Modal */}
       {showAddModal && (

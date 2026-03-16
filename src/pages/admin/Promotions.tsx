@@ -8,9 +8,15 @@ import { brandService } from '../../api/services/brandService';
 import { ProductResponse } from '../../api/types/product';
 import { CategoryResponse } from '../../api/types/category';
 import { BrandResponse } from '../../api/types/brand';
+import { PagedResponse } from '../../api/types/common';
+import Pagination from '../../components/ui/Pagination';
+
+const PAGE_SIZE = 10;
 
 const AdminPromotions: React.FC = () => {
+  const [pagedData, setPagedData] = useState<PagedResponse<PromotionResponse> | null>(null);
   const [promotions, setPromotions] = useState<PromotionResponse[]>([]);
+  const [currentPage, setCurrentPage] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showAddModal, setShowAddModal] = useState(false);
@@ -39,31 +45,28 @@ const AdminPromotions: React.FC = () => {
     brandId: '',
   });
 
-  const fetchPromotions = async () => {
+  const fetchPromotions = async (page = currentPage) => {
     try {
       setLoading(true);
       setError(null);
-      const data = await promotionService.getAllPromotions();
-      console.log('Promotions fetched:', data);
-      setPromotions(data);
+      const data = await promotionService.getAllPromotionsPaged({ page, size: PAGE_SIZE });
+      setPagedData(data);
+      setPromotions(data.content);
     } catch (err: any) {
       setError(err.message || 'Failed to load promotions');
-      console.error('Error fetching promotions:', err);
     } finally {
       setLoading(false);
     }
   };
 
-  useEffect(() => {
-    fetchPromotions();
-  }, []);
+  useEffect(() => { fetchPromotions(currentPage); }, [currentPage]);
 
   const handleDelete = async (id: number) => {
     if (!window.confirm('Bạn có chắc chắn muốn xóa khuyến mãi này?')) return;
 
     try {
       await promotionService.deletePromotion(id);
-      fetchPromotions();
+      fetchPromotions(currentPage);
     } catch (err: any) {
       alert(err.message || 'Failed to delete promotion');
     }
@@ -88,7 +91,8 @@ const AdminPromotions: React.FC = () => {
       
       setShowAddModal(false);
       resetForm();
-      fetchPromotions();
+      fetchPromotions(0);
+      setCurrentPage(0);
     } catch (err: any) {
       alert(err.message || 'Failed to create promotion');
     }
@@ -111,7 +115,7 @@ const AdminPromotions: React.FC = () => {
       setShowEditModal(false);
       setSelectedPromotion(null);
       resetForm();
-      fetchPromotions();
+      fetchPromotions(currentPage);
     } catch (err: any) {
       alert(err.message || 'Failed to update promotion');
     }
@@ -247,7 +251,7 @@ const AdminPromotions: React.FC = () => {
   return (
     <AdminLayout 
       title="Danh Sách Khuyến Mãi" 
-      subtitle={`Quản lý ${promotions.length} khuyến mãi trong hệ thống.`}
+      subtitle={`Quản lý ${pagedData?.totalElements ?? promotions.length} khuyến mãi trong hệ thống.`}
       requiredRole="staff"
       actions={
         <button 
@@ -366,6 +370,18 @@ const AdminPromotions: React.FC = () => {
               </tbody>
             </table>
           </div>
+          {pagedData && (
+            <div className="px-6 py-4 border-t border-gray-100 flex items-center justify-between">
+              <p className="text-xs text-gray-400">
+                Tổng {pagedData.totalElements} khuyến mãi
+              </p>
+              <Pagination
+                currentPage={currentPage}
+                totalPages={pagedData.totalPages}
+                onPageChange={setCurrentPage}
+              />
+            </div>
+          )}
         </div>
       )}
 

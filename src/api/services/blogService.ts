@@ -2,14 +2,28 @@
 import { apiClient } from '../client';
 import { API_ENDPOINTS } from '../config';
 import { BlogResponse, BlogCreationRequest, BlogUpdateRequest } from '../types/blog';
+import { PagedResponse } from '../types/common';
+
+export interface BlogPageParams {
+  page?: number;
+  size?: number;
+  sortBy?: string;
+  sortDir?: 'asc' | 'desc';
+}
 
 export const blogService = {
   // Get all blogs (public)
   getAllBlogs: async (): Promise<BlogResponse[]> => {
-    const response = await apiClient.get<BlogResponse[]>(
-      API_ENDPOINTS.BLOGS
-    );
+    const response = await apiClient.get<BlogResponse[]>(API_ENDPOINTS.BLOGS);
     return response.result || [];
+  },
+
+  // Get blogs paged (public)
+  getAllBlogsPaged: async (params: BlogPageParams = {}): Promise<PagedResponse<BlogResponse>> => {
+    const { page = 0, size = 10, sortBy = 'blogId', sortDir = 'desc' } = params;
+    const query = new URLSearchParams({ page: String(page), size: String(size), sortBy, sortDir });
+    const response = await apiClient.get<PagedResponse<BlogResponse>>(`${API_ENDPOINTS.BLOGS_PAGED}?${query}`);
+    return response.result!;
   },
 
   // Get blog by ID (public)

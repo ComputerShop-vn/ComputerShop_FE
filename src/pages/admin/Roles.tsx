@@ -1,23 +1,28 @@
 import React, { useState, useEffect } from 'react';
 import AdminLayout from '../../components/layout/AdminLayout';
 import { roleService } from '../../api/services/roleService';
+import Pagination from '../../components/ui/Pagination';
 import { RoleResponse, RoleCreationRequest, RoleUpdateRequest } from '../../api/types/role';
 
 const AdminRoles: React.FC = () => {
   const [roles, setRoles] = useState<RoleResponse[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [currentPage, setCurrentPage] = useState(0);
+  const [totalPages, setTotalPages] = useState(0);
   const [showAddModal, setShowAddModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [selectedRole, setSelectedRole] = useState<RoleResponse | null>(null);
   const [formData, setFormData] = useState({ name: '', description: '' });
 
-  const fetchRoles = async () => {
+  const fetchRoles = async (page = 0) => {
     try {
       setLoading(true);
       setError(null);
-      const data = await roleService.getAllRoles();
-      setRoles(data);
+      const data = await roleService.getAllRolesPaged(page, 10);
+      setRoles(data.content);
+      setTotalPages(data.totalPages);
+      setCurrentPage(data.page);
     } catch (err: any) {
       setError(err.message || 'Failed to load roles');
       console.error('Error fetching roles:', err);
@@ -42,7 +47,7 @@ const AdminRoles: React.FC = () => {
       await roleService.createRole(request);
       setShowAddModal(false);
       setFormData({ name: '', description: '' });
-      fetchRoles();
+      fetchRoles(currentPage);
     } catch (err: any) {
       alert(err.message || 'Failed to create role');
     }
@@ -61,7 +66,7 @@ const AdminRoles: React.FC = () => {
       setShowEditModal(false);
       setSelectedRole(null);
       setFormData({ name: '', description: '' });
-      fetchRoles();
+      fetchRoles(currentPage);
     } catch (err: any) {
       alert(err.message || 'Failed to update role');
     }
@@ -72,7 +77,7 @@ const AdminRoles: React.FC = () => {
 
     try {
       await roleService.deleteRole(id);
-      fetchRoles();
+      fetchRoles(currentPage);
     } catch (err: any) {
       alert(err.message || 'Failed to delete role');
     }
@@ -172,6 +177,8 @@ const AdminRoles: React.FC = () => {
           </table>
         </div>
       )}
+
+      <Pagination currentPage={currentPage} totalPages={totalPages} onPageChange={(p) => fetchRoles(p)} />
 
       {/* Add Modal */}
       {showAddModal && (

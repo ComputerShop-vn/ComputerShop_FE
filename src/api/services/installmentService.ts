@@ -1,6 +1,7 @@
 // Installment Package Service
 import { apiClient } from '../client';
 import { API_ENDPOINTS } from '../config';
+import { PagedResponse } from '../types/common';
 import { 
   InstallmentPackageResponse, 
   InstallmentPackageRequest 
@@ -23,6 +24,15 @@ export const installmentService = {
       true // Requires authentication
     );
     return response.result || [];
+  },
+
+  // Get all installment packages paged (requires authentication)
+  getAllPackagesPaged: async (page = 0, size = 10): Promise<PagedResponse<InstallmentPackageResponse>> => {
+    const response = await apiClient.get<PagedResponse<InstallmentPackageResponse>>(
+      `${API_ENDPOINTS.INSTALLMENT_PACKAGES_PAGED}?page=${page}&size=${size}`,
+      true
+    );
+    return response.result!;
   },
 
   // Create installment package (requires STAFF/ADMIN)

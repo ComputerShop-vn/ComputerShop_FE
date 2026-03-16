@@ -1,6 +1,6 @@
 import { apiClient } from '../client';
 import { API_ENDPOINTS } from '../config';
-import { ApiResponse } from '../types/common';
+import { ApiResponse, PagedResponse } from '../types/common';
 import {
   AttributeResponse,
   AttributeCreationRequest,
@@ -14,6 +14,14 @@ export const attributeService = {
       API_ENDPOINTS.ATTRIBUTES
     );
     return response.result || [];
+  },
+
+  // Get all attributes paged
+  getAllAttributesPaged: async (page = 0, size = 10): Promise<PagedResponse<AttributeResponse>> => {
+    const response = await apiClient.get<PagedResponse<AttributeResponse>>(
+      `${API_ENDPOINTS.ATTRIBUTES_PAGED}?page=${page}&size=${size}`
+    );
+    return response.result!;
   },
 
   // Get attribute by ID

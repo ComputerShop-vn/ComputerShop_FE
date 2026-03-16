@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import AdminLayout from '../../components/layout/AdminLayout';
 import { attributeService } from '../../api/services/attributeService';
+import Pagination from '../../components/ui/Pagination';
 import {
   AttributeResponse,
   AttributeCreationRequest,
@@ -11,18 +12,21 @@ const AdminAttributes: React.FC = () => {
   const [attributes, setAttributes] = useState<AttributeResponse[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [currentPage, setCurrentPage] = useState(0);
+  const [totalPages, setTotalPages] = useState(0);
   const [showAddModal, setShowAddModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [selectedAttribute, setSelectedAttribute] = useState<AttributeResponse | null>(null);
   const [formData, setFormData] = useState<string>('');
 
-  // Fetch all attributes
-  const fetchAttributes = async () => {
+  const fetchAttributes = async (page = 0) => {
     try {
       setLoading(true);
       setError(null);
-      const data = await attributeService.getAllAttributes();
-      setAttributes(data);
+      const data = await attributeService.getAllAttributesPaged(page, 10);
+      setAttributes(data.content);
+      setTotalPages(data.totalPages);
+      setCurrentPage(data.page);
     } catch (err: any) {
       setError(err.message || 'Failed to load attributes');
       console.error('Error fetching attributes:', err);
@@ -47,7 +51,7 @@ const AdminAttributes: React.FC = () => {
       await attributeService.createAttribute(request);
       setShowAddModal(false);
       setFormData('');
-      fetchAttributes();
+      fetchAttributes(currentPage);
     } catch (err: any) {
       alert(err.message || 'Failed to create attribute');
     }
@@ -66,7 +70,7 @@ const AdminAttributes: React.FC = () => {
       setShowEditModal(false);
       setSelectedAttribute(null);
       setFormData('');
-      fetchAttributes();
+      fetchAttributes(currentPage);
     } catch (err: any) {
       alert(err.message || 'Failed to update attribute');
     }
@@ -78,7 +82,7 @@ const AdminAttributes: React.FC = () => {
 
     try {
       await attributeService.deleteAttribute(id);
-      fetchAttributes();
+      fetchAttributes(currentPage);
     } catch (err: any) {
       alert(err.message || 'Failed to delete attribute');
     }
@@ -196,6 +200,8 @@ const AdminAttributes: React.FC = () => {
           </table>
         </div>
       )}
+
+      <Pagination currentPage={currentPage} totalPages={totalPages} onPageChange={(p) => fetchAttributes(p)} />
 
       {/* Add Modal */}
       {showAddModal && (

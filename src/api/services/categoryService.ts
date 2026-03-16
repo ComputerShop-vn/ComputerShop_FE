@@ -1,6 +1,7 @@
 // Category Service
 import { apiClient } from '../client';
 import { API_ENDPOINTS } from '../config';
+import { PagedResponse } from '../types/common';
 import { CategoryResponse, CategoryRequest } from '../types/category';
 
 export const categoryService = {
@@ -10,6 +11,14 @@ export const categoryService = {
       API_ENDPOINTS.CATEGORIES
     );
     return response.result || [];
+  },
+
+  // Get all categories paged (public)
+  getAllCategoriesPaged: async (page = 0, size = 10): Promise<PagedResponse<CategoryResponse>> => {
+    const response = await apiClient.get<PagedResponse<CategoryResponse>>(
+      `${API_ENDPOINTS.CATEGORIES_PAGED}?page=${page}&size=${size}`
+    );
+    return response.result!;
   },
 
   // Get category by ID (public)

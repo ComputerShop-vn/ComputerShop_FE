@@ -1,24 +1,28 @@
-
 import React, { useState, useEffect } from 'react';
 import AdminLayout from '../../components/layout/AdminLayout';
 import { categoryService } from '../../api/services/categoryService';
+import Pagination from '../../components/ui/Pagination';
 import { CategoryResponse, CategoryRequest } from '../../api/types/category';
 
 const AdminCategories: React.FC = () => {
   const [categories, setCategories] = useState<CategoryResponse[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [currentPage, setCurrentPage] = useState(0);
+  const [totalPages, setTotalPages] = useState(0);
   const [showAddModal, setShowAddModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<CategoryResponse | null>(null);
   const [formData, setFormData] = useState({ categoryName: '', description: '' });
 
-  const fetchCategories = async () => {
+  const fetchCategories = async (page = 0) => {
     try {
       setLoading(true);
       setError(null);
-      const data = await categoryService.getAllCategories();
-      setCategories(data);
+      const data = await categoryService.getAllCategoriesPaged(page, 10);
+      setCategories(data.content);
+      setTotalPages(data.totalPages);
+      setCurrentPage(data.page);
     } catch (err: any) {
       setError(err.message || 'Failed to load categories');
       console.error('Error fetching categories:', err);
@@ -43,7 +47,7 @@ const AdminCategories: React.FC = () => {
       await categoryService.createCategory(request);
       setShowAddModal(false);
       setFormData({ categoryName: '', description: '' });
-      fetchCategories();
+      fetchCategories(currentPage);
     } catch (err: any) {
       alert(err.message || 'Failed to create category');
     }
@@ -62,7 +66,7 @@ const AdminCategories: React.FC = () => {
       setShowEditModal(false);
       setSelectedCategory(null);
       setFormData({ categoryName: '', description: '' });
-      fetchCategories();
+      fetchCategories(currentPage);
     } catch (err: any) {
       alert(err.message || 'Failed to update category');
     }
@@ -73,7 +77,7 @@ const AdminCategories: React.FC = () => {
 
     try {
       await categoryService.deleteCategory(id);
-      fetchCategories();
+      fetchCategories(currentPage);
     } catch (err: any) {
       alert(err.message || 'Failed to delete category');
     }
@@ -172,6 +176,8 @@ const AdminCategories: React.FC = () => {
           </table>
         </div>
       )}
+
+      <Pagination currentPage={currentPage} totalPages={totalPages} onPageChange={(p) => fetchCategories(p)} />
 
       {/* Add Modal */}
       {showAddModal && (
