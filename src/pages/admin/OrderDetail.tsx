@@ -2,7 +2,22 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import AdminLayout from '../../components/layout/AdminLayout';
 import { orderService } from '../../api/services/orderService';
+import { warrantyService } from '../../api/services/warrantyService';
 import { OrderResponse } from '../../api/types/order';
+import { WarrantyResponse, WarrantyStatus } from '../../api/types/warranty';
+
+const WARRANTY_STATUS: Record<WarrantyStatus, { label: string; color: string }> = {
+  ACTIVE:  { label: 'Còn hiệu lực', color: 'text-green-700 bg-green-50 border-green-200' },
+  EXPIRED: { label: 'Hết hạn',      color: 'text-gray-500 bg-gray-100 border-gray-200' },
+  VOIDED:  { label: 'Đã hủy',       color: 'text-red-500 bg-red-50 border-red-200' },
+};
+
+const CLAIM_STATUS: Record<string, { label: string; color: string }> = {
+  PENDING:    { label: 'Chờ xử lý',  color: 'text-amber-700 bg-amber-50' },
+  PROCESSING: { label: 'Đang xử lý', color: 'text-blue-700 bg-blue-50' },
+  COMPLETED:  { label: 'Hoàn thành', color: 'text-green-700 bg-green-50' },
+  REJECTED:   { label: 'Từ chối',    color: 'text-red-600 bg-red-50' },
+};
 
 const OrderDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -10,6 +25,8 @@ const OrderDetail: React.FC = () => {
   const [order, setOrder] = useState<OrderResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [warranties, setWarranties] = useState<WarrantyResponse[]>([]);
+  const [expandedWarranty, setExpandedWarranty] = useState<number | null>(null);
 
   useEffect(() => {
     if (id) {
@@ -23,6 +40,7 @@ const OrderDetail: React.FC = () => {
       setError(null);
       const data = await orderService.getOrderById(Number(id));
       setOrder(data);
+      warrantyService.getByOrderId(data.orderId).then(setWarranties).catch(() => {});
     } catch (err: any) {
       setError(err.message || 'Failed to load order details');
       console.error('Error fetching order:', err);
@@ -266,6 +284,110 @@ const OrderDetail: React.FC = () => {
                 ))}
               </tbody>
             </table>
+          </div>
+        )}
+
+        {/* Warranties */}
+        {warranties.length > 0 && (
+          <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
+            <div className="p-6 border-b border-gray-100 flex items-center gap-2">
+              <span className="material-symbols-outlined text-gray-400">verified_user</span>
+              <h3 className="text-sm font-black uppercase tracking-widest text-gray-400">
+                Bảo hành ({warranties.length})
+              </h3>
+            </div>
+            <div className="divide-y divide-gray-50">
+              {warranties.map(w => {
+                const si = WARRANTY_STATUS[w.status];
+                const daysLeft = Math.ceil((new Date(w.endDate).getTime() - Date.now()) / 86400000);
+                const isOpen = expandedWarranty === w.id;
+                return (
+                  <div key={w.id}>
+                    <button
+                      onClick={() => setExpandedWarranty(isOpen ? null : w.id)}
+                      className="w-full flex items-center gap-4 px-6 py-4 hover:bg-gray-50 transition text-left"
+                    >
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-bold text-gray-900 truncate">{w.productName}</p>
+                        {w.serialNumber && <p className="text-xs text-gray-400">S/N: {w.serialNumber}</p>}
+                      </div>
+                      <div className="text-xs text-gray-400 whitespace-nowrap">
+                        {formatDate(w.startDate)} → {formatDate(w.endDate)}
+                      </div>
+                      <span className={`text-[9px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-full border flex-shrink-0 ${si.color}`}>
+                        {si.label}
+                      </span>
+                      <span className="material-symbols-outlined text-base text-gray-400 flex-shrink-0">
+                        {isOpen ? 'expand_less' : 'expand_more'}
+                      </span>
+                    </button>
+
+                    {isOpen && (
+                      <div className="px-6 pb-5 pt-2 bg-gray-50/50 space-y-4">
+                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-sm">
+                          <div>
+                            <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-1">Loại bảo hành</p>
+                            <p className="font-medium">{w.type === 'MANUFACTURER' ? 'Hãng' : 'Cửa hàng'}</p>
+                          </div>
+                          {w.status === 'ACTIVE' && (
+                            <div>
+                              <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-1">Còn lại</p>
+                              <p className={`font-bold ${daysLeft <= 30 ? 'text-amber-500' : 'text-green-600'}`}>
+                                {daysLeft > 0 ? `${daysLeft} ngày` : 'Hết hạn hôm nay'}
+                              </p>
+                            </div>
+                          )}
+                        </div>
+
+                        {w.description && (
+                          <p className="text-xs text-gray-500 bg-white border border-gray-100 rounded-lg px-3 py-2">{w.description}</p>
+                        )}
+
+                        {w.claims && w.claims.length > 0 ? (
+                          <div>
+                            <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-3">
+                              Yêu cầu bảo hành ({w.claims.length})
+                            </p>
+                            <div className="space-y-2">
+                              {w.claims.map(c => {
+                                const cs = CLAIM_STATUS[c.status] ?? { label: c.status, color: 'text-gray-500 bg-gray-50' };
+                                return (
+                                  <div key={c.claimId} className="bg-white border border-gray-100 rounded-xl p-4">
+                                    <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
+                                      <span className="text-xs text-gray-400">{formatDate(c.claimDate)}</span>
+                                      <span className={`text-[9px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-full ${cs.color}`}>
+                                        {cs.label}
+                                      </span>
+                                    </div>
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+                                      <div>
+                                        <p className="text-[9px] font-bold uppercase tracking-widest text-gray-400 mb-0.5">Khách hàng</p>
+                                        <p className="text-gray-700">{c.customerNote || '—'}</p>
+                                      </div>
+                                      {c.technicianNote && (
+                                        <div>
+                                          <p className="text-[9px] font-bold uppercase tracking-widest text-gray-400 mb-0.5">Kỹ thuật viên</p>
+                                          <p className="text-gray-700">{c.technicianNote}</p>
+                                        </div>
+                                      )}
+                                    </div>
+                                    {c.solutionType && (
+                                      <p className="text-xs text-gray-500 mt-2">Giải pháp: <span className="font-bold">{c.solutionType}</span></p>
+                                    )}
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        ) : (
+                          <p className="text-xs text-gray-400">Chưa có yêu cầu bảo hành nào.</p>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
           </div>
         )}
       </div>

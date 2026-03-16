@@ -3,7 +3,9 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { orderService } from '../../api/services/orderService';
 import { paymentService } from '../../api/services/paymentService';
+import { warrantyService } from '../../api/services/warrantyService';
 import { OrderResponse } from '../../api/types/order';
+import { WarrantyResponse, WarrantyStatus } from '../../api/types/warranty';
 
 const fmt = (v: number) => new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(v);
 
@@ -17,6 +19,19 @@ const statusLabel: Record<string, { label: string; color: string }> = {
   FAILED:    { label: 'Thất bại',     color: 'bg-gray-100 text-gray-500' },
 };
 
+const WARRANTY_STATUS: Record<WarrantyStatus, { label: string; color: string }> = {
+  ACTIVE:  { label: 'Còn hiệu lực', color: 'text-green-700 bg-green-50 border-green-200' },
+  EXPIRED: { label: 'Hết hạn',      color: 'text-gray-500 bg-gray-100 border-gray-200' },
+  VOIDED:  { label: 'Đã hủy',       color: 'text-red-500 bg-red-50 border-red-200' },
+};
+
+const CLAIM_STATUS: Record<string, { label: string; color: string }> = {
+  PENDING:    { label: 'Chờ xử lý',  color: 'text-amber-700 bg-amber-50' },
+  PROCESSING: { label: 'Đang xử lý', color: 'text-blue-700 bg-blue-50' },
+  COMPLETED:  { label: 'Hoàn thành', color: 'text-green-700 bg-green-50' },
+  REJECTED:   { label: 'Từ chối',    color: 'text-red-600 bg-red-50' },
+};
+
 const OrderDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const { user } = useAuth();
@@ -26,12 +41,17 @@ const OrderDetail: React.FC = () => {
   const [cancelling, setCancelling] = useState(false);
   const [payingNext, setPayingNext] = useState(false);
   const [error, setError] = useState('');
+  const [warranties, setWarranties] = useState<WarrantyResponse[]>([]);
+  const [expandedWarranty, setExpandedWarranty] = useState<number | null>(null);
 
   useEffect(() => {
     if (!user) { navigate('/login'); return; }
     if (!id) return;
     orderService.getOrderById(Number(id))
-      .then(setOrder)
+      .then(o => {
+        setOrder(o);
+        warrantyService.getByOrderId(o.orderId).then(setWarranties).catch(() => {});
+      })
       .catch(() => setError('Không tìm thấy đơn hàng.'))
       .finally(() => setLoading(false));
   }, [id, user, navigate]);
@@ -182,6 +202,92 @@ const OrderDetail: React.FC = () => {
                           {isPaid ? 'Đã trả' : isOverdue ? 'Quá hạn' : isNext ? 'Cần trả' : 'Chờ'}
                         </span>
                       </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* Warranties */}
+          {warranties.length > 0 && (
+            <div className="bg-white border border-gray-100 rounded-2xl p-6">
+              <h3 className="text-[10px] font-bold uppercase tracking-[0.2em] text-gray-400 mb-6 pb-2 border-b border-gray-50 flex items-center gap-2">
+                <span className="material-symbols-outlined text-base">verified_user</span>
+                Bảo hành ({warranties.length})
+              </h3>
+              <div className="space-y-3">
+                {warranties.map(w => {
+                  const si = WARRANTY_STATUS[w.status];
+                  const daysLeft = Math.ceil((new Date(w.endDate).getTime() - Date.now()) / 86400000);
+                  const isOpen = expandedWarranty === w.id;
+                  return (
+                    <div key={w.id} className="border border-gray-100 rounded-xl overflow-hidden">
+                      <button
+                        onClick={() => setExpandedWarranty(isOpen ? null : w.id)}
+                        className="w-full flex items-center justify-between gap-3 px-4 py-3 hover:bg-gray-50 transition text-left"
+                      >
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-bold text-black truncate">{w.productName}</p>
+                          {w.serialNumber && <p className="text-[10px] text-gray-400">S/N: {w.serialNumber}</p>}
+                        </div>
+                        <span className={`text-[9px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-full border flex-shrink-0 ${si.color}`}>
+                          {si.label}
+                        </span>
+                        <span className="material-symbols-outlined text-base text-gray-400 flex-shrink-0">
+                          {isOpen ? 'expand_less' : 'expand_more'}
+                        </span>
+                      </button>
+
+                      {isOpen && (
+                        <div className="px-4 pb-4 border-t border-gray-50 pt-3 space-y-3">
+                          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
+                            <div>
+                              <p className="text-[9px] font-bold uppercase tracking-widest text-gray-400 mb-0.5">Bắt đầu</p>
+                              <p className="font-medium">{new Date(w.startDate).toLocaleDateString('vi-VN')}</p>
+                            </div>
+                            <div>
+                              <p className="text-[9px] font-bold uppercase tracking-widest text-gray-400 mb-0.5">Hết hạn</p>
+                              <p className="font-medium">{new Date(w.endDate).toLocaleDateString('vi-VN')}</p>
+                            </div>
+                            <div>
+                              <p className="text-[9px] font-bold uppercase tracking-widest text-gray-400 mb-0.5">Loại</p>
+                              <p className="font-medium">{w.type === 'MANUFACTURER' ? 'Hãng' : 'Cửa hàng'}</p>
+                            </div>
+                            {w.status === 'ACTIVE' && (
+                              <div>
+                                <p className="text-[9px] font-bold uppercase tracking-widest text-gray-400 mb-0.5">Còn lại</p>
+                                <p className={`font-bold ${daysLeft <= 30 ? 'text-amber-500' : 'text-green-600'}`}>
+                                  {daysLeft > 0 ? `${daysLeft} ngày` : 'Hết hạn hôm nay'}
+                                </p>
+                              </div>
+                            )}
+                          </div>
+
+                          {w.description && (
+                            <p className="text-xs text-gray-500 bg-gray-50 rounded-lg px-3 py-2">{w.description}</p>
+                          )}
+
+                          {w.claims && w.claims.length > 0 && (
+                            <div>
+                              <p className="text-[9px] font-bold uppercase tracking-widest text-gray-400 mb-2">Yêu cầu bảo hành ({w.claims.length})</p>
+                              <div className="space-y-1.5">
+                                {w.claims.map(c => {
+                                  const cs = CLAIM_STATUS[c.status] ?? { label: c.status, color: 'text-gray-500 bg-gray-50' };
+                                  return (
+                                    <div key={c.claimId} className="flex flex-wrap items-center gap-2 text-xs bg-gray-50 rounded-lg px-3 py-2">
+                                      <span className="text-gray-400">{new Date(c.claimDate).toLocaleDateString('vi-VN')}</span>
+                                      <span className="flex-1 min-w-0 text-gray-700 truncate">{c.customerNote || '—'}</span>
+                                      {c.technicianNote && <span className="text-blue-500 italic truncate max-w-[140px]">{c.technicianNote}</span>}
+                                      <span className={`text-[9px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-full ${cs.color}`}>{cs.label}</span>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      )}
                     </div>
                   );
                 })}

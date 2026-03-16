@@ -65,6 +65,7 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children, title, subtitle, ac
     { path: `${prefix}/orders`, label: 'Đơn Hàng', icon: 'shopping_cart' },
     { path: `${prefix}/promotions`, label: 'Khuyến Mãi', icon: 'sell' },
     { path: `${prefix}/installment-packages`, label: 'Gói Trả Góp', icon: 'credit_card' },
+    { path: `${prefix}/warranties`, label: 'Bảo Hành', icon: 'verified_user' },
   ];
 
   const adminNavItems = [

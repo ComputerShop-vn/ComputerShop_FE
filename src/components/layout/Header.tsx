@@ -348,6 +348,14 @@ const Header: React.FC<HeaderProps> = ({ cartCount }) => {
                     Đơn hàng
                   </Link>
                   <Link 
+                    to="/warranty" 
+                    onClick={() => setShowUserMenu(false)}
+                    className="flex items-center gap-3 w-full p-3 text-left text-xs font-bold uppercase tracking-widest text-gray-600 hover:bg-gray-50 hover:text-black transition rounded-lg"
+                  >
+                    <span className="material-symbols-outlined text-lg">verified_user</span>
+                    Bảo hành
+                  </Link>
+                  <Link 
                     to="/profile" 
                     onClick={() => setShowUserMenu(false)}
                     className="flex items-center gap-3 w-full p-3 text-left text-xs font-bold uppercase tracking-widest text-gray-600 hover:bg-gray-50 hover:text-black transition rounded-lg"

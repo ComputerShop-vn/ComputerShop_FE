@@ -35,6 +35,7 @@ import Compare from './src/pages/Compare/Compare';
 import OrderList from './src/pages/Orders/OrderList';
 import OrderDetail from './src/pages/Orders/OrderDetail';
 import WarrantyLookup from './src/pages/Warranty/WarrantyLookup';
+import AdminWarranties from './src/pages/admin/Warranties';
 import PaymentCallback from './src/pages/PaymentCallback';
 import Profile from './src/pages/Profile/Profile';
 
@@ -61,6 +62,7 @@ const App: React.FC = () => {
               <Route path="/admin/attributes" element={<AdminAttributes />} />
               <Route path="/admin/blogs" element={<AdminBlogs />} />
               <Route path="/admin/users" element={<AdminUsers />} />
+              <Route path="/admin/warranties" element={<AdminWarranties />} />
 
               {/* Staff routes - same pages, different prefix */}
               <Route path="/staff" element={<Dashboard />} />
@@ -73,6 +75,7 @@ const App: React.FC = () => {
               <Route path="/staff/installment-packages" element={<AdminInstallmentPackages />} />
               <Route path="/staff/attributes" element={<AdminAttributes />} />
               <Route path="/staff/blogs" element={<AdminBlogs />} />
+              <Route path="/staff/warranties" element={<AdminWarranties />} />
               
               {/* Auth routes */}
               <Route path="/login" element={<Login />} />
