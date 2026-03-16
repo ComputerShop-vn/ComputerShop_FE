@@ -24,3 +24,26 @@ export interface InstallmentPackageRequest {
   description?: string;
   isActive?: boolean;
 }
+
+export interface InstallmentCalculateRequest {
+  packageId: number;
+  orderAmount: number;
+}
+
+export interface InstallmentScheduleItem {
+  installmentNo: number;
+  dueDate: string;
+  amount: number;
+  status?: string;
+}
+
+export interface InstallmentPreviewResponse {
+  packageId: number;
+  durationMonths: number;
+  interestRate: number;
+  downPaymentPercentage: number;
+  downPaymentAmount: number;
+  monthlyInstallmentAmount: number;
+  totalPayableAmount: number;
+  schedule: InstallmentScheduleItem[];
+}

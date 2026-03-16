@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useCart } from '../../context/CartContext';
 import { useAuth } from '../../context/AuthContext';
@@ -6,8 +6,10 @@ import { userService } from '../../api/services/userService';
 import { orderService } from '../../api/services/orderService';
 import { paymentService } from '../../api/services/paymentService';
 import { installmentService } from '../../api/services/installmentService';
-import { UserResponse } from '../../api/types/user';
-import { InstallmentPackageResponse } from '../../api/types/installment';
+import { InstallmentPackageResponse, InstallmentPreviewResponse } from '../../api/types/installment';
+
+const fmt = (v: number) => new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(v);
+const fmtDate = (d: string) => new Date(d).toLocaleDateString('vi-VN');
 
 const Checkout: React.FC = () => {
   const { cart, totalPrice, clearCart } = useCart();
@@ -16,61 +18,46 @@ const Checkout: React.FC = () => {
   const [paymentMethod, setPaymentMethod] = useState<'cod' | 'bank' | 'installment'>('cod');
   const [installmentPackages, setInstallmentPackages] = useState<InstallmentPackageResponse[]>([]);
   const [selectedPackage, setSelectedPackage] = useState<InstallmentPackageResponse | null>(null);
+  const [preview, setPreview] = useState<InstallmentPreviewResponse | null>(null);
+  const [previewLoading, setPreviewLoading] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
-  const [userProfile, setUserProfile] = useState<UserResponse | null>(null);
-  const [formData, setFormData] = useState({
-    fullName: '',
-    phoneNumber: '',
-    address: '',
-  });
+  const [formData, setFormData] = useState({ fullName: '', phoneNumber: '', address: '' });
 
-  // Tính toán dựa trên gói được chọn
-  // downPayment = khoản trả ngay khi đặt hàng
-  // monthlyPayment = (totalPrice - downPayment) / durationMonths — mỗi tháng sau đó
-  const downPaymentPercent = selectedPackage?.downPaymentPercent ?? 0;
-  const downPayment = totalPrice * (downPaymentPercent / 100);
-  const remainingAmount = totalPrice - downPayment;
-  const monthlyPayment = selectedPackage
-    ? (remainingAmount / selectedPackage.durationMonths).toFixed(2)
-    : '0.00';
-  // Cần trả ngay: nếu có down payment thì chỉ trả down payment, không có thì trả kỳ 1
-  const dueNow = downPaymentPercent > 0 ? downPayment : parseFloat(monthlyPayment);
-
-  // Fetch user profile on mount
   useEffect(() => {
-    const fetchUserProfile = async () => {
-      if (authUser) {
-        try {
-          const profile = await userService.getMyProfile();
-          setUserProfile(profile);
-          setFormData({
-            fullName: profile.username || '',
-            phoneNumber: profile.phoneNumber || '',
-            address: '',
-          });
-        } catch (err) {
-          console.error('Error fetching user profile:', err);
-        }
-      }
-    };
-    fetchUserProfile();
+    if (authUser) {
+      userService.getMyProfile().then(p => {
+        setFormData({ fullName: p.username || '', phoneNumber: p.phoneNumber || '', address: '' });
+      }).catch(() => {});
+    }
   }, [authUser]);
 
-  // Load installment packages
   useEffect(() => {
-    installmentService.getActivePackages()
-      .then((pkgs) => {
-        setInstallmentPackages(pkgs);
-        if (pkgs.length > 0) setSelectedPackage(pkgs[0]);
-      })
-      .catch(console.error);
+    installmentService.getActivePackages().then(pkgs => {
+      setInstallmentPackages(pkgs);
+      if (pkgs.length > 0) setSelectedPackage(pkgs[0]);
+    }).catch(() => {});
   }, []);
 
-  React.useEffect(() => {
-    if (cart.length === 0) {
-      navigate('/cart');
+  const fetchPreview = useCallback(async (pkg: InstallmentPackageResponse) => {
+    setPreviewLoading(true);
+    setPreview(null);
+    try {
+      const result = await installmentService.calculatePreview({ packageId: pkg.packageId, orderAmount: totalPrice });
+      setPreview(result);
+    } catch {
+      setPreview(null);
+    } finally {
+      setPreviewLoading(false);
     }
-  }, [cart.length, navigate]);
+  }, [totalPrice]);
+
+  useEffect(() => {
+    if (paymentMethod === 'installment' && selectedPackage) {
+      fetchPreview(selectedPackage);
+    }
+  }, [paymentMethod, selectedPackage, fetchPreview]);
+
+  useEffect(() => { if (cart.length === 0) navigate('/cart'); }, [cart.length, navigate]);
 
   const handlePlaceOrder = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -114,19 +101,12 @@ const Checkout: React.FC = () => {
       const order = await orderService.placeOrder(orderData);
       console.log('Order created:', order);
 
-      // If payment method is bank transfer, redirect to VNPay
-      if (paymentMethod === 'bank') {
+      // If payment method is bank transfer OR installment, redirect to VNPay
+      if (paymentMethod === 'bank' || paymentMethod === 'installment') {
         try {
           const payment = await paymentService.createPayment(order.orderId);
-          
-          if (!payment.paymentUrl) {
-            throw new Error('Không nhận được link thanh toán từ server.');
-          }
-
-          // Clear cart before redirecting
+          if (!payment.paymentUrl) throw new Error('Không nhận được link thanh toán từ server.');
           await clearCart();
-          
-          // Redirect to VNPay
           paymentService.redirectToPayment(payment.paymentUrl);
           return;
         } catch (paymentError: any) {
@@ -136,15 +116,6 @@ const Checkout: React.FC = () => {
           navigate(`/orders/${order.orderId}`);
           return;
         }
-      }
-
-      // Installment: giả lập thanh toán kỳ đầu thành công, không redirect VNPay
-      if (paymentMethod === 'installment') {
-        await clearCart();
-        setIsProcessing(false);
-        alert(`Đặt hàng trả góp thành công!\nKỳ đầu tiên sẽ được thanh toán theo lịch. Cảm ơn bạn đã mua sắm.`);
-        navigate(`/orders/${order.orderId}`);
-        return;
       }
 
       // For COD, just show success and redirect
@@ -265,103 +236,68 @@ const Checkout: React.FC = () => {
 
               {/* Installment Options */}
               {paymentMethod === 'installment' && (
-                <div className="mt-8 p-8 bg-gray-50 rounded-3xl animate-in fade-in slide-in-from-top-4 duration-500">
-                  <h4 className="text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-6">Chọn kỳ hạn trả góp</h4>
-
+                <div className="mt-8 p-8 bg-gray-50 rounded-3xl">
+                  <h4 className="text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-6">Chọn gói trả góp</h4>
                   {installmentPackages.length === 0 ? (
                     <p className="text-sm text-gray-400 italic">Không có gói trả góp khả dụng.</p>
                   ) : (
                     <>
-                      <div className="grid grid-cols-3 gap-4 mb-8">
-                        {installmentPackages.map((pkg) => (
-                          <button
-                            key={pkg.packageId}
-                            type="button"
+                      <div className="grid grid-cols-3 gap-3 mb-6">
+                        {installmentPackages.map(pkg => (
+                          <button key={pkg.packageId} type="button"
                             onClick={() => setSelectedPackage(pkg)}
-                            className={`py-4 px-2 rounded-xl text-xs font-bold transition-all text-center ${
-                              selectedPackage?.packageId === pkg.packageId
-                                ? 'bg-black text-white'
-                                : 'bg-white text-gray-400 border border-gray-100'
-                            }`}
-                          >
-                            {pkg.durationMonths} Tháng
-                            {pkg.interestRate > 0 && (
-                              <span className="block text-[9px] mt-0.5 opacity-70">{pkg.interestRate}% lãi</span>
-                            )}
+                            className={`py-4 px-2 rounded-xl text-xs font-bold transition-all text-center ${selectedPackage?.packageId === pkg.packageId ? 'bg-black text-white' : 'bg-white text-gray-500 border border-gray-100 hover:border-gray-300'}`}>
+                            {pkg.durationMonths} tháng
+                            {pkg.interestRate > 0
+                              ? <span className="block text-[9px] mt-0.5 opacity-70">{pkg.interestRate}% lãi</span>
+                              : <span className="block text-[9px] mt-0.5 text-emerald-400">0% lãi</span>}
                           </button>
                         ))}
                       </div>
 
-                      {selectedPackage && (
-                        <div className="space-y-3">
-                          {downPaymentPercent > 0 ? (
-                            <>
-                              {/* Có down payment: kỳ 1 = down payment, kỳ 2..N+1 = monthly */}
-                              <div className="flex items-center justify-between p-4 bg-black rounded-2xl">
-                                <div>
-                                  <p className="text-[10px] font-bold text-gray-300 uppercase tracking-widest mb-1">
-                                    Kỳ 1 — Trả trước ({downPaymentPercent}%) — Ngay hôm nay
-                                  </p>
-                                  <p className="text-xl font-black text-white">${downPayment.toFixed(2)}</p>
-                                </div>
-                                <span className="material-symbols-outlined text-gray-400">payments</span>
-                              </div>
-                              <div className="flex items-center justify-between p-4 bg-white rounded-2xl border border-gray-100">
-                                <div>
-                                  <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">
-                                    Kỳ 2–{selectedPackage.durationMonths + 1} — Mỗi tháng tiếp theo
-                                  </p>
-                                  <p className="text-xl font-black text-black">${monthlyPayment}</p>
-                                </div>
-                                <div className="text-right">
-                                  <p className={`text-[10px] font-bold uppercase tracking-widest ${selectedPackage.interestRate === 0 ? 'text-emerald-500' : 'text-orange-500'}`}>
-                                    Lãi suất {selectedPackage.interestRate}%
-                                  </p>
-                                  <p className="text-[10px] text-gray-400 mt-0.5">
-                                    Đơn tối thiểu ${selectedPackage.minOrderAmount.toLocaleString()}
-                                  </p>
-                                </div>
-                              </div>
-                            </>
-                          ) : (
-                            <>
-                              {/* Không có down payment: kỳ 1 = monthly, thanh toán ngay */}
-                              <div className="flex items-center justify-between p-4 bg-black rounded-2xl">
-                                <div>
-                                  <p className="text-[10px] font-bold text-gray-300 uppercase tracking-widest mb-1">
-                                    Kỳ 1 — Thanh toán ngay sau đặt hàng
-                                  </p>
-                                  <p className="text-xl font-black text-white">${monthlyPayment}</p>
-                                </div>
-                                <span className="material-symbols-outlined text-gray-400">credit_card</span>
-                              </div>
-                              {selectedPackage.durationMonths > 1 && (
-                                <div className="flex items-center justify-between p-4 bg-white rounded-2xl border border-gray-100">
-                                  <div>
-                                    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">
-                                      Kỳ 2–{selectedPackage.durationMonths} — Mỗi tháng tiếp theo
-                                    </p>
-                                    <p className="text-xl font-black text-black">${monthlyPayment}</p>
-                                  </div>
-                                  <div className="text-right">
-                                    <p className={`text-[10px] font-bold uppercase tracking-widest ${selectedPackage.interestRate === 0 ? 'text-emerald-500' : 'text-orange-500'}`}>
-                                      Lãi suất {selectedPackage.interestRate}%
-                                    </p>
-                                    <p className="text-[10px] text-gray-400 mt-0.5">
-                                      Đơn tối thiểu ${selectedPackage.minOrderAmount.toLocaleString()}
-                                    </p>
-                                  </div>
-                                </div>
-                              )}
-                            </>
-                          )}
+                      {selectedPackage && totalPrice < selectedPackage.minOrderAmount && (
+                        <p className="text-xs text-red-500 mb-4">⚠ Đơn hàng chưa đạt giá trị tối thiểu {fmt(selectedPackage.minOrderAmount)} để áp dụng gói này.</p>
+                      )}
 
-                          {/* Warning */}
-                          {totalPrice < selectedPackage.minOrderAmount && (
-                            <p className="text-xs text-red-500 px-1">
-                              ⚠ Đơn hàng chưa đạt giá trị tối thiểu ${selectedPackage.minOrderAmount.toLocaleString()} để áp dụng gói này.
-                            </p>
-                          )}
+                      {previewLoading && (
+                        <div className="flex items-center gap-2 text-xs text-gray-400 py-4">
+                          <div className="w-4 h-4 border-2 border-gray-300 border-t-black rounded-full animate-spin" />
+                          Đang tính toán lịch trả góp...
+                        </div>
+                      )}
+
+                      {preview && !previewLoading && (
+                        <div className="space-y-3">
+                          <div className="grid grid-cols-2 gap-3">
+                            <div className="p-4 bg-black rounded-2xl">
+                              <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Trả trước ({preview.downPaymentPercentage}%)</p>
+                              <p className="text-lg font-black text-white">{fmt(preview.downPaymentAmount)}</p>
+                            </div>
+                            <div className="p-4 bg-white rounded-2xl border border-gray-100">
+                              <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Mỗi tháng × {preview.durationMonths}</p>
+                              <p className="text-lg font-black text-black">{fmt(preview.monthlyInstallmentAmount)}</p>
+                            </div>
+                          </div>
+                          <div className="flex justify-between text-xs text-gray-500 px-1">
+                            <span>Tổng thanh toán</span>
+                            <span className="font-bold text-black">{fmt(preview.totalPayableAmount)}</span>
+                          </div>
+                          <div className="mt-4">
+                            <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-3">Lịch thanh toán dự kiến</p>
+                            <div className="space-y-2 max-h-52 overflow-y-auto pr-1">
+                              {preview.schedule.map((s, i) => (
+                                <div key={s.installmentNo} className={`flex items-center justify-between text-xs p-3 rounded-xl ${i === 0 ? 'bg-amber-50 border border-amber-100' : 'bg-white border border-gray-50'}`}>
+                                  <div className="flex items-center gap-2">
+                                    <div className={`w-5 h-5 rounded-full flex items-center justify-center text-[9px] font-bold flex-shrink-0 ${i === 0 ? 'bg-amber-400 text-white' : 'bg-gray-100 text-gray-500'}`}>
+                                      {s.installmentNo}
+                                    </div>
+                                    <span className="text-gray-600">{i === 0 ? 'Trả trước — ' : `Kỳ ${s.installmentNo} — `}{fmtDate(s.dueDate)}</span>
+                                  </div>
+                                  <span className="font-bold text-gray-900">{fmt(s.amount)}</span>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
                         </div>
                       )}
                     </>
@@ -379,7 +315,9 @@ const Checkout: React.FC = () => {
                 ? 'Đang xử lý...'
                 : paymentMethod === 'bank'
                   ? 'Đặt hàng & Thanh toán VNPay'
-                  : 'Xác nhận đặt hàng'
+                  : paymentMethod === 'installment'
+                    ? 'Đặt hàng & Thanh toán trả trước'
+                    : 'Xác nhận đặt hàng'
               }
             </button>
           </form>
@@ -408,86 +346,44 @@ const Checkout: React.FC = () => {
             <div className="space-y-4 pt-4 border-t border-gray-50">
               <div className="flex justify-between text-sm">
                 <span className="text-gray-400">Tổng tiền hàng</span>
-                <span className="font-bold text-black">${totalPrice.toFixed(2)}</span>
+                <span className="font-bold text-black">{fmt(totalPrice)}</span>
               </div>
               <div className="flex justify-between text-sm">
                 <span className="text-gray-400">Phí vận chuyển</span>
                 <span className="text-emerald-500 font-bold uppercase text-[10px] tracking-widest">Miễn phí</span>
               </div>
 
-              {/* Installment breakdown */}
-              {paymentMethod === 'installment' && selectedPackage && (
+              {/* Installment breakdown from API preview */}
+              {paymentMethod === 'installment' && preview && (
                 <div className="pt-3 border-t border-gray-50 space-y-2">
-                  {downPaymentPercent > 0 ? (
-                    <>
-                      {/* Kỳ 1 = down payment, trả ngay */}
-                      <div className="flex justify-between items-center py-2 px-3 bg-black rounded-xl">
-                        <div>
-                          <p className="text-[10px] font-bold text-gray-300 uppercase tracking-widest">Kỳ 1 — Trả trước ({downPaymentPercent}%)</p>
-                          <p className="text-[10px] text-gray-400">Thanh toán ngay hôm nay</p>
-                        </div>
-                        <span className="text-sm font-black text-white">${downPayment.toFixed(2)}</span>
-                      </div>
-                      {/* Kỳ 2..N+1 = monthly */}
-                      <div className="flex justify-between items-center py-2 px-3 bg-gray-50 rounded-xl">
-                        <div>
-                          <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">
-                            Kỳ 2–{selectedPackage.durationMonths + 1} — Mỗi tháng
-                          </p>
-                          <p className="text-[10px] text-gray-400">Tháng tiếp theo trở đi</p>
-                        </div>
-                        <span className="text-sm font-black text-gray-700">${monthlyPayment}</span>
-                      </div>
-                    </>
-                  ) : (
-                    <>
-                      {/* Kỳ 1 = monthly, trả ngay */}
-                      <div className="flex justify-between items-center py-2 px-3 bg-black rounded-xl">
-                        <div>
-                          <p className="text-[10px] font-bold text-gray-300 uppercase tracking-widest">Kỳ 1 — Thanh toán ngay</p>
-                          <p className="text-[10px] text-gray-400">Sau khi đặt hàng</p>
-                        </div>
-                        <span className="text-sm font-black text-white">${monthlyPayment}</span>
-                      </div>
-                      {selectedPackage.durationMonths > 1 && (
-                        <div className="flex justify-between items-center py-2 px-3 bg-gray-50 rounded-xl">
-                          <div>
-                            <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">
-                              Kỳ 2–{selectedPackage.durationMonths} — Mỗi tháng
-                            </p>
-                            <p className="text-[10px] text-gray-400">Tháng tiếp theo trở đi</p>
-                          </div>
-                          <span className="text-sm font-black text-gray-700">${monthlyPayment}</span>
-                        </div>
-                      )}
-                    </>
-                  )}
-
+                  <div className="flex justify-between items-center py-2 px-3 bg-black rounded-xl">
+                    <div>
+                      <p className="text-[10px] font-bold text-gray-300 uppercase tracking-widest">Trả trước ({preview.downPaymentPercentage}%)</p>
+                      <p className="text-[10px] text-gray-400">Thanh toán ngay hôm nay</p>
+                    </div>
+                    <span className="text-sm font-black text-white">{fmt(preview.downPaymentAmount)}</span>
+                  </div>
+                  <div className="flex justify-between items-center py-2 px-3 bg-gray-50 rounded-xl">
+                    <div>
+                      <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Mỗi tháng × {preview.durationMonths}</p>
+                      <p className="text-[10px] text-gray-400">Tháng tiếp theo trở đi</p>
+                    </div>
+                    <span className="text-sm font-black text-gray-700">{fmt(preview.monthlyInstallmentAmount)}</span>
+                  </div>
                   <div className="pt-2 border-t border-gray-100 flex justify-between items-end">
                     <div>
-                      <span className="text-xs font-bold uppercase tracking-widest text-black">Cần trả ngay</span>
-                      <p className="text-[10px] text-gray-400 mt-0.5">
-                        {downPaymentPercent > 0
-                          ? `Kỳ 1 — trả trước ${downPaymentPercent}%`
-                          : `Kỳ 1 / ${selectedPackage.durationMonths} kỳ`}
-                      </p>
+                      <span className="text-xs font-bold uppercase tracking-widest text-black">Tổng thanh toán</span>
+                      <p className="text-[10px] text-gray-400 mt-0.5">Bao gồm lãi suất {preview.interestRate}%</p>
                     </div>
-                    <p className="text-2xl font-black text-amber-600 leading-none">${dueNow.toFixed(2)}</p>
+                    <p className="text-2xl font-black text-amber-600 leading-none">{fmt(preview.totalPayableAmount)}</p>
                   </div>
-
-                  {totalPrice < selectedPackage.minOrderAmount && (
-                    <p className="text-xs text-red-500 px-1">
-                      ⚠ Đơn chưa đạt tối thiểu ${selectedPackage.minOrderAmount.toLocaleString()}
-                    </p>
-                  )}
                 </div>
               )}
 
-              {/* COD / Bank full payment */}
               {paymentMethod !== 'installment' && (
                 <div className="pt-4 border-t border-gray-50 flex justify-between items-end">
                   <span className="text-xs font-bold uppercase tracking-widest text-black">Tổng thanh toán</span>
-                  <p className="text-2xl font-black text-black leading-none">${totalPrice.toFixed(2)}</p>
+                  <p className="text-2xl font-black text-black leading-none">{fmt(totalPrice)}</p>
                 </div>
               )}
             </div>

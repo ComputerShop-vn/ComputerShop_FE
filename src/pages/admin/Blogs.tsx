@@ -22,11 +22,25 @@ const AdminBlogs: React.FC = () => {
     try {
       setLoading(true);
       setError(null);
-      const data = await blogService.getAllBlogsPaged({ page, size: PAGE_SIZE });
-      setPagedData(data);
-      setBlogs(data.content);
+      try {
+        const data = await blogService.getAllBlogsPaged({ page, size: PAGE_SIZE });
+        setPagedData(data);
+        setBlogs(data.content);
+      } catch {
+        const all = await blogService.getAllBlogs();
+        const start = page * PAGE_SIZE;
+        const content = all.slice(start, start + PAGE_SIZE);
+        setBlogs(content);
+        setPagedData({
+          content,
+          page,
+          size: PAGE_SIZE,
+          totalElements: all.length,
+          totalPages: Math.ceil(all.length / PAGE_SIZE),
+        });
+      }
     } catch (err: any) {
-      setError(err.message || 'Failed to load blogs');
+      setError(err.message || 'Không thể tải danh sách blog');
     } finally {
       setLoading(false);
     }

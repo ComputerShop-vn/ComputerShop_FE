@@ -11,7 +11,12 @@ const Home: React.FC = () => {
   useEffect(() => {
     productService.getProductsPaged({ page: 0, size: 8 })
       .then(data => setProducts(data.content))
-      .catch(err => console.error('Error fetching products:', err))
+      .catch(() => {
+        // fallback to non-paged
+        productService.getAllProducts()
+          .then(data => setProducts(data.slice(0, 8)))
+          .catch(err => console.error('Error fetching products:', err));
+      })
       .finally(() => setLoading(false));
   }, []);
   return (

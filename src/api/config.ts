@@ -1,5 +1,6 @@
 // API Configuration
-export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080';
+// Empty string in dev so Vite proxy handles routing (avoids CORS)
+export const API_BASE_URL = import.meta.env.DEV ? '' : (import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080');
 export const API_VERSION = '/api/v1';
 
 // API Endpoints
@@ -62,6 +63,7 @@ export const API_ENDPOINTS = {
   INSTALLMENT_PACKAGES_PAGED: `${API_VERSION}/installment-packages/paged`,
   INSTALLMENT_PACKAGES_ACTIVE: `${API_VERSION}/installment-packages/active`,
   INSTALLMENT_PACKAGE_BY_ID: (id: number) => `${API_VERSION}/installment-packages/${id}`,
+  INSTALLMENT_CALCULATE: `${API_VERSION}/installment-packages/calculate`,
   
   // Promotions
   PROMOTIONS: `${API_VERSION}/promotions`,
@@ -92,15 +94,16 @@ export const API_ENDPOINTS = {
   CLAIMS_BY_WARRANTY: (warrantyId: number) => `${API_VERSION}/claims/warranty/${warrantyId}`,
 
   // Payment
-  PAYMENT_CREATE: `/orders/payment/createPayment`,
-  PAYMENT_CALLBACK: `/orders/payment/callback`,
-  PAYMENT_IPN: `/orders/payment/vnp-ipn`,
-  
+  PAYMENT_CREATE: `${API_VERSION}/orders/payment/createPayment`,
+  PAYMENT_CALLBACK: `${API_VERSION}/orders/payment/callback`,
+  PAYMENT_IPN: `${API_VERSION}/orders/payment/vnp-ipn`,
+
   // Auth
   AUTH_LOGIN: `${API_VERSION}/auth/login`,
   AUTH_LOGOUT: `${API_VERSION}/auth/logout`,
   AUTH_INTROSPECT: `${API_VERSION}/auth/introspect`,
   AUTH_REFRESH: `${API_VERSION}/auth/refresh`,
+  AUTH_GOOGLE: `${API_VERSION}/auth/google`,
 } as const;
 
 // HTTP Methods
