@@ -60,8 +60,15 @@ const Shop: React.FC = () => {
             const data = await productService.getProductsPaged({ page: 0, size: 200, categoryId: categoryId && !isNaN(categoryId) ? categoryId : undefined });
             fetched = data.content;
           } catch {
+<<<<<<< HEAD
             const all = await productService.getAllProducts();
             fetched = categoryId && !isNaN(categoryId) ? all.filter(p => p.categoryId === categoryId) : all;
+=======
+            fetched = await productService.getAllProducts({
+              categoryId: categoryId && !isNaN(categoryId) ? categoryId : undefined
+            });
+            totalFromServer = fetched.length;
+>>>>>>> 32a01dd9cda3d9d2268c6c1d762ecf9640a29f59
           }
         }
 
