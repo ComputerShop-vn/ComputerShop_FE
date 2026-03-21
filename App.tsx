@@ -29,6 +29,7 @@ import { CartProvider, useCart } from './src/context/CartContext';
 import { CompareProvider } from './src/context/CompareContext';
 import CompareBar from './src/components/ui/CompareBar';
 import CompareSearchModal from './src/components/ui/CompareSearchModal';
+import { ToastProvider } from './src/components/ui/Toast';
 import Cart from './src/pages/Cart/Cart';
 import Checkout from './src/pages/Cart/Checkout';
 import Compare from './src/pages/Compare/Compare';
@@ -45,6 +46,7 @@ const App: React.FC = () => {
       <CompareProvider>
         <Router>
           <CartProvider>
+            <ToastProvider>
             <ScrollToTop />
             <CompareBar />
             <CompareSearchModal />
@@ -112,6 +114,7 @@ const App: React.FC = () => {
               } />
             </Routes>
           </div>
+          </ToastProvider>
         </CartProvider>
       </Router>
     </CompareProvider>

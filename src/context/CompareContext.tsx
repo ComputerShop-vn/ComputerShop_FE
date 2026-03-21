@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, ReactNode } from 'react';
 import { ProductResponse } from '../api/types/product';
+import { showToast } from '../components/ui/Toast';
 
 interface CompareContextType {
   compareItems: ProductResponse[];
@@ -21,12 +22,11 @@ export const CompareProvider: React.FC<{ children: ReactNode }> = ({ children })
   const addToCompare = (product: ProductResponse) => {
     if (compareItems.find((item) => item.productId === product.productId)) return;
     if (compareItems.length >= 3) {
-      alert('Bạn chỉ có thể so sánh tối đa 3 sản phẩm cùng lúc.');
+      showToast('Bạn chỉ có thể so sánh tối đa 3 sản phẩm cùng lúc.', 'warning');
       return;
     }
-    // Chỉ cho phép cùng category nếu đã có sản phẩm
     if (compareItems.length > 0 && compareItems[0].categoryId !== product.categoryId) {
-      alert(`Chỉ có thể so sánh các sản phẩm cùng danh mục "${compareItems[0].categoryName}".`);
+      showToast(`Chỉ có thể so sánh các sản phẩm cùng danh mục "${compareItems[0].categoryName}".`, 'warning');
       return;
     }
     setCompareItems((prev) => [...prev, product]);

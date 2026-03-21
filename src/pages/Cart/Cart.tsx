@@ -10,15 +10,15 @@ const Cart: React.FC = () => {
 
   if (cart.length === 0) {
     return (
-      <div className="min-h-[60vh] flex flex-col items-center justify-center px-4 font-['Jost']">
-        <div className="w-24 h-24 bg-gray-50 rounded-full flex items-center justify-center mb-6">
-          <span className="material-symbols-outlined text-4xl text-gray-300">shopping_basket</span>
+      <div className="bg-gray-50 min-h-[60vh] flex flex-col items-center justify-center px-4 font-['Jost']">
+        <div className="w-24 h-24 rounded-full flex items-center justify-center mb-6" style={{ background: '#1a1d27' }}>
+          <span className="material-symbols-outlined text-4xl" style={{ color: '#2d3748' }}>shopping_basket</span>
         </div>
-        <h2 className="text-2xl font-light uppercase tracking-tight text-black mb-2">Giỏ hàng trống</h2>
-        <p className="text-gray-400 text-sm mb-8">Bạn chưa có sản phẩm nào trong giỏ hàng.</p>
-        <Link 
-          to="/shop" 
-          className="bg-black text-white px-10 py-4 text-[11px] font-bold uppercase tracking-widest hover:bg-gray-800 transition rounded-xl shadow-xl shadow-black/10"
+        <h2 className="text-2xl font-light uppercase tracking-tight mb-2" style={{ color: '#e2e8f0' }}>Giỏ hàng trống</h2>
+        <p className="text-sm mb-8" style={{ color: '#64748b' }}>Bạn chưa có sản phẩm nào trong giỏ hàng.</p>
+        <Link to="/shop" className="px-10 py-4 text-[11px] font-bold uppercase tracking-widest rounded-xl transition text-white" style={{ background: '#3b82f6' }}
+          onMouseEnter={e => (e.currentTarget as HTMLElement).style.opacity = '0.85'}
+          onMouseLeave={e => (e.currentTarget as HTMLElement).style.opacity = '1'}
         >
           Tiếp tục mua sắm
         </Link>
@@ -27,122 +27,108 @@ const Cart: React.FC = () => {
   }
 
   return (
-    <div className="max-w-7xl mx-auto px-4 py-12 md:py-20 font-['Jost']">
-      <div className="flex flex-col lg:flex-row gap-12">
-        {/* Cart Items List */}
-        <div className="flex-1">
-          <div className="flex items-end justify-between mb-10">
-            <h1 className="text-4xl font-light uppercase tracking-tight text-black">
-              Giỏ <span className="font-bold">Hàng</span>
-            </h1>
-            <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-gray-400">
-              {totalItems} Sản phẩm
-            </span>
-          </div>
+    <div className="bg-gray-50 min-h-screen font-['Jost']">
+      <div className="max-w-7xl mx-auto px-4 py-12 md:py-20">
+        <div className="flex flex-col lg:flex-row gap-12">
 
-          <div className="space-y-6">
-            {cart.map((item) => (
-              <div 
-                key={item.id} 
-                className="flex flex-col sm:flex-row items-center gap-6 p-6 bg-white border border-gray-100 rounded-3xl hover:shadow-xl hover:shadow-black/5 transition-all duration-500 group"
-              >
-                {/* Product Image */}
-                <div className="w-24 h-24 bg-gray-50 rounded-2xl overflow-hidden flex-shrink-0">
-                  <img 
-                    src={item.image} 
-                    alt={item.name} 
-                    className="w-full h-full object-cover group-hover:scale-110 transition duration-700"
-                    referrerPolicy="no-referrer"
-                  />
-                </div>
-
-                {/* Product Info */}
-                <div className="flex-1 min-w-0 text-center sm:text-left">
-                  <h3 className="text-sm font-bold text-black truncate mb-1">{item.name}</h3>
-                  <p className="text-[10px] text-gray-400 uppercase font-bold tracking-widest">{item.category}</p>
-                </div>
-
-                {/* Quantity Controls */}
-                <div className="flex items-center bg-gray-50 rounded-xl p-1">
-                  <button 
-                    onClick={() => updateQuantity(item.id, item.quantity - 1, item.cartItemId)}
-                    className="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-black transition"
-                  >
-                    <span className="material-symbols-outlined text-sm">remove</span>
-                  </button>
-                  <span className="w-10 text-center text-xs font-bold text-black">{item.quantity}</span>
-                  <button 
-                    onClick={() => updateQuantity(item.id, item.quantity + 1, item.cartItemId)}
-                    className="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-black transition"
-                  >
-                    <span className="material-symbols-outlined text-sm">add</span>
-                  </button>
-                </div>
-
-                {/* Price */}
-                <div className="text-center sm:text-right min-w-[100px]">
-                  <p className="text-sm font-black text-black">{fmt(item.price * item.quantity)}</p>
-                  <div className="flex flex-col items-end mt-1">
-                    <p className="text-[10px] text-gray-400">{fmt(item.price)} / cái</p>
-                    {item.originalPrice && (
-                      <p className="text-[10px] text-red-400 line-through">{fmt(item.originalPrice)}</p>
-                    )}
-                  </div>
-                </div>
-
-                {/* Remove Button */}
-                <button 
-                  onClick={() => removeFromCart(item.id, item.cartItemId)}
-                  className="p-2 text-gray-300 hover:text-red-500 transition"
-                >
-                  <span className="material-symbols-outlined text-xl">close</span>
-                </button>
-              </div>
-            ))}
-          </div>
-
-          <div className="mt-10">
-            <Link to="/shop" className="inline-flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-gray-400 hover:text-black transition">
-              <span className="material-symbols-outlined text-sm">arrow_back</span>
-              Tiếp tục mua sắm
-            </Link>
-          </div>
-        </div>
-
-        {/* Order Summary */}
-        <div className="w-full lg:w-96">
-          <div className="bg-white border border-gray-100 rounded-3xl p-8 sticky top-32 shadow-2xl shadow-black/5">
-            <h3 className="text-xs font-black uppercase tracking-[0.2em] text-black mb-8 border-b border-gray-50 pb-4">Tóm tắt đơn hàng</h3>
-            
-            <div className="space-y-4 mb-8">
-              <div className="flex justify-between text-sm">
-                <span className="text-gray-400">Tạm tính</span>
-                <span className="font-bold text-black">{fmt(totalPrice)}</span>
-              </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-gray-400">Giao hàng</span>
-                <span className="text-emerald-500 font-bold uppercase text-[10px] tracking-widest">Miễn phí</span>
-              </div>
-              <div className="pt-4 border-t border-gray-50 flex justify-between items-end">
-                <span className="text-xs font-bold uppercase tracking-widest text-black">Tổng cộng</span>
-                <div className="text-right">
-                  <p className="text-2xl font-black text-black leading-none">{fmt(totalPrice)}</p>
-                  <p className="text-[10px] text-gray-400 mt-1 uppercase font-bold">Đã bao gồm VAT</p>
-                </div>
-              </div>
+          {/* Cart Items */}
+          <div className="flex-1">
+            <div className="flex items-end justify-between mb-10">
+              <h1 className="text-4xl font-light uppercase tracking-tight" style={{ color: '#e2e8f0' }}>
+                Giỏ <span className="font-bold">Hàng</span>
+              </h1>
+              <span className="text-[10px] font-bold uppercase tracking-[0.2em]" style={{ color: '#64748b' }}>{totalItems} Sản phẩm</span>
             </div>
 
-            <button 
-              onClick={() => navigate('/checkout')}
-              className="w-full bg-black text-white py-5 text-[11px] font-bold uppercase tracking-widest hover:bg-gray-800 transition rounded-2xl shadow-xl shadow-black/10 mb-4"
-            >
-              Tiến hành thanh toán
-            </button>
-            
-            <div className="flex items-center justify-center gap-4 opacity-30 grayscale">
-              <img src="https://upload.wikimedia.org/wikipedia/commons/5/5e/Visa_Inc._logo.svg" alt="Visa" className="h-4" />
-              <img src="https://upload.wikimedia.org/wikipedia/commons/2/2a/Mastercard-logo.svg" alt="Mastercard" className="h-6" />
-              <img src="https://upload.wikimedia.org/wikipedia/commons/b/b5/PayPal.svg" alt="PayPal" className="h-4" />
+            <div className="space-y-4">
+              {cart.map((item) => (
+                <div key={item.id} className="flex flex-col sm:flex-row items-center gap-6 p-6 rounded-2xl border border-gray-100 bg-white transition-all duration-300 group hover:border-gray-300 hover:shadow-sm">
+                  <div className="w-20 h-20 rounded-xl overflow-hidden flex-shrink-0 bg-gray-100">
+                    <img src={item.image} alt={item.name} className="w-full h-full object-cover group-hover:scale-110 transition duration-500" referrerPolicy="no-referrer" />
+                  </div>
+
+                  <div className="flex-1 min-w-0 text-center sm:text-left">
+                    <h3 className="text-sm font-bold truncate mb-1 text-gray-900">{item.name}</h3>
+                    <p className="text-[10px] uppercase font-bold tracking-widest text-gray-400">{item.category}</p>
+                  </div>
+
+                  {/* Qty */}
+                  <div className="flex items-center rounded-xl p-1 bg-gray-100">
+                    <button onClick={() => updateQuantity(item.id, item.quantity - 1, item.cartItemId)}
+                      className="w-8 h-8 flex items-center justify-center transition text-gray-400 hover:text-gray-900"
+                    >
+                      <span className="material-symbols-outlined text-sm">remove</span>
+                    </button>
+                    <span className="w-10 text-center text-xs font-bold text-gray-900">{item.quantity}</span>
+                    <button onClick={() => updateQuantity(item.id, item.quantity + 1, item.cartItemId)}
+                      className="w-8 h-8 flex items-center justify-center transition text-gray-400 hover:text-gray-900"
+                    >
+                      <span className="material-symbols-outlined text-sm">add</span>
+                    </button>
+                  </div>
+
+                  {/* Price */}
+                  <div className="text-center sm:text-right min-w-[100px]">
+                    <p className="text-sm font-black text-gray-900">{fmt(item.price * item.quantity)}</p>
+                    <p className="text-[10px] mt-1 text-gray-400">{fmt(item.price)} / cái</p>
+                    {item.originalPrice && <p className="text-[10px] line-through text-red-400">{fmt(item.originalPrice)}</p>}
+                  </div>
+
+                  <button onClick={() => removeFromCart(item.id, item.cartItemId)} className="p-2 transition text-gray-300 hover:text-red-500">
+                    <span className="material-symbols-outlined text-xl">close</span>
+                  </button>
+                </div>
+              ))}
+            </div>
+
+            <div className="mt-10">
+              <Link to="/shop" className="inline-flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest transition" style={{ color: '#64748b' }}
+                onMouseEnter={e => (e.currentTarget as HTMLElement).style.color = '#3b82f6'}
+                onMouseLeave={e => (e.currentTarget as HTMLElement).style.color = '#64748b'}
+              >
+                <span className="material-symbols-outlined text-sm">arrow_back</span>
+                Tiếp tục mua sắm
+              </Link>
+            </div>
+          </div>
+
+          {/* Summary */}
+          <div className="w-full lg:w-96">
+            <div className="rounded-2xl border border-gray-100 p-8 sticky top-32 bg-white">
+              <h3 className="text-xs font-black uppercase tracking-[0.2em] mb-8 pb-4 border-b border-gray-100 text-gray-900">Tóm tắt đơn hàng</h3>
+
+              <div className="space-y-4 mb-8">
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-400">Tạm tính</span>
+                  <span className="font-bold text-gray-900">{fmt(totalPrice)}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-400">Giao hàng</span>
+                  <span className="font-bold uppercase text-[10px] tracking-widest text-emerald-500">Miễn phí</span>
+                </div>
+                <div className="pt-4 border-t border-gray-100 flex justify-between items-end">
+                  <span className="text-xs font-bold uppercase tracking-widest text-gray-900">Tổng cộng</span>
+                  <div className="text-right">
+                    <p className="text-2xl font-black leading-none text-black">{fmt(totalPrice)}</p>
+                    <p className="text-[10px] mt-1 uppercase font-bold text-gray-400">Đã bao gồm VAT</p>
+                  </div>
+                </div>
+              </div>
+
+              <button onClick={() => navigate('/checkout')}
+                className="w-full py-4 text-[11px] font-bold uppercase tracking-widest rounded-xl transition text-white mb-4"
+                style={{ background: '#3b82f6' }}
+                onMouseEnter={e => (e.currentTarget as HTMLElement).style.opacity = '0.85'}
+                onMouseLeave={e => (e.currentTarget as HTMLElement).style.opacity = '1'}
+              >
+                Tiến hành thanh toán
+              </button>
+
+              <div className="flex items-center justify-center gap-4 opacity-20 grayscale">
+                <img src="https://upload.wikimedia.org/wikipedia/commons/5/5e/Visa_Inc._logo.svg" alt="Visa" className="h-4" />
+                <img src="https://upload.wikimedia.org/wikipedia/commons/2/2a/Mastercard-logo.svg" alt="Mastercard" className="h-6" />
+                <img src="https://upload.wikimedia.org/wikipedia/commons/b/b5/PayPal.svg" alt="PayPal" className="h-4" />
+              </div>
             </div>
           </div>
         </div>

@@ -6,6 +6,7 @@ import { paymentService } from '../../api/services/paymentService';
 import { warrantyService } from '../../api/services/warrantyService';
 import { OrderResponse } from '../../api/types/order';
 import { WarrantyResponse, WarrantyStatus } from '../../api/types/warranty';
+import { showToast, showConfirm } from '../../components/ui/Toast';
 
 const fmt = (v: number) => new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(v);
 
@@ -57,13 +58,16 @@ const OrderDetail: React.FC = () => {
   }, [id, user, navigate]);
 
   const handleCancel = async () => {
-    if (!order || !window.confirm('Bạn có chắc muốn hủy đơn hàng này?')) return;
+    if (!order) return;
+    const ok = await showConfirm({ title: 'Hủy đơn hàng', message: 'Bạn có chắc muốn hủy đơn hàng này?', confirmText: 'Hủy đơn', cancelText: 'Giữ lại', danger: true });
+    if (!ok) return;
     setCancelling(true);
     try {
       await orderService.cancelOrder(order.orderId);
       setOrder({ ...order, status: 'CANCELLED' });
+      showToast('Đã hủy đơn hàng thành công.', 'success');
     } catch {
-      alert('Không thể hủy đơn hàng. Vui lòng thử lại.');
+      showToast('Không thể hủy đơn hàng. Vui lòng thử lại.', 'error');
     } finally {
       setCancelling(false);
     }
@@ -78,7 +82,7 @@ const OrderDetail: React.FC = () => {
       paymentService.redirectToPayment(payment.paymentUrl);
     } catch (err: any) {
       console.error('Payment error:', err);
-      alert(err.message || 'Không thể tạo link thanh toán. Vui lòng thử lại.');
+      showToast(err.message || 'Không thể tạo link thanh toán. Vui lòng thử lại.', 'error');
       setPayingNext(false);
     }
   };

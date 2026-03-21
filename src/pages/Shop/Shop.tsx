@@ -18,14 +18,6 @@ const PRICE_RANGES = [
   { label: 'Trên 50 triệu', min: 50_000_000, max: Infinity },
 ];
 
-const DISCOUNT_RANGES = [
-  { label: 'Từ 5%', min: 5 },
-  { label: 'Từ 10%', min: 10 },
-  { label: 'Từ 20%', min: 20 },
-  { label: 'Từ 30%', min: 30 },
-  { label: 'Từ 50%', min: 50 },
-];
-
 const Shop: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
@@ -46,49 +38,34 @@ const Shop: React.FC = () => {
   const [sortOrder, setSortOrder] = useState<'none' | 'asc' | 'desc'>('none');
   const [openDropdown, setOpenDropdown] = useState<'price' | 'sort' | null>(null);
 
-  useEffect(() => {
-    setCurrentPage(0);
-  }, [categoryFilter, searchFilter, selectedPriceRange, filterDiscount, sortOrder]);
+  useEffect(() => { setCurrentPage(0); }, [categoryFilter, searchFilter, selectedPriceRange, filterDiscount, sortOrder]);
 
   useEffect(() => {
     const fetchData = async () => {
       try {
         setLoading(true);
         setError(null);
-
         const categoryId = categoryFilter ? parseInt(categoryFilter) : undefined;
-
         let fetched: ProductResponse[] = [];
-        let totalFromServer = 0;
 
         if (searchFilter) {
-          // search: fetch all pages or use paged without client filter
           try {
             const data = await productService.searchProductsPaged(searchFilter, { page: 0, size: 200 });
             fetched = data.content;
-            totalFromServer = data.totalElements;
           } catch {
             fetched = await productService.getAllProducts();
-            totalFromServer = fetched.length;
           }
         } else {
           try {
-            const data = await productService.getProductsPaged({
-              page: 0,
-              size: 200,
-              categoryId: categoryId && !isNaN(categoryId) ? categoryId : undefined,
-            });
+            const data = await productService.getProductsPaged({ page: 0, size: 200, categoryId: categoryId && !isNaN(categoryId) ? categoryId : undefined });
             fetched = data.content;
-            totalFromServer = data.totalElements;
           } catch {
             const all = await productService.getAllProducts();
             fetched = categoryId && !isNaN(categoryId) ? all.filter(p => p.categoryId === categoryId) : all;
-            totalFromServer = fetched.length;
           }
         }
 
         setAllProducts(fetched);
-
         if (categories.length === 0) {
           const cats = await categoryService.getCategoryTree();
           setCategories(cats);
@@ -102,342 +79,255 @@ const Shop: React.FC = () => {
     fetchData();
   }, [currentPage, categoryFilter, searchFilter]);
 
-  // Apply client-side filters whenever allProducts or filters change
   useEffect(() => {
     let filtered = [...allProducts];
-
     if (selectedPriceRange) {
       filtered = filtered.filter(p => {
         const price = p.discountedPrice ?? p.basePrice;
         return price >= selectedPriceRange.min && price < selectedPriceRange.max;
       });
     }
-
-    if (filterDiscount) {
-      filtered = filtered.filter(p =>
-        p.discountedPrice != null && p.discountedPrice < p.basePrice
-      );
-    }
-
-    if (sortOrder === 'asc') {
-      filtered.sort((a, b) => (a.discountedPrice ?? a.basePrice) - (b.discountedPrice ?? b.basePrice));
-    } else if (sortOrder === 'desc') {
-      filtered.sort((a, b) => (b.discountedPrice ?? b.basePrice) - (a.discountedPrice ?? a.basePrice));
-    }
+    if (filterDiscount) filtered = filtered.filter(p => p.discountedPrice != null && p.discountedPrice < p.basePrice);
+    if (sortOrder === 'asc') filtered.sort((a, b) => (a.discountedPrice ?? a.basePrice) - (b.discountedPrice ?? b.basePrice));
+    else if (sortOrder === 'desc') filtered.sort((a, b) => (b.discountedPrice ?? b.basePrice) - (a.discountedPrice ?? a.basePrice));
 
     const start = currentPage * PAGE_SIZE;
     const pageSlice = filtered.slice(start, start + PAGE_SIZE);
     setProducts(pageSlice);
-    setPagedData({
-      content: pageSlice,
-      totalElements: filtered.length,
-      totalPages: Math.ceil(filtered.length / PAGE_SIZE),
-      size: PAGE_SIZE,
-      number: currentPage,
-    });
+    setPagedData({ content: pageSlice, totalElements: filtered.length, totalPages: Math.ceil(filtered.length / PAGE_SIZE), size: PAGE_SIZE, number: currentPage });
   }, [allProducts, selectedPriceRange, filterDiscount, sortOrder, currentPage]);
 
   const handleCategoryChange = (categoryId: number | null) => {
-    if (categoryId !== null) {
-      navigate(`/shop?category=${categoryId}`);
-    } else {
-      navigate('/shop');
-    }
+    navigate(categoryId !== null ? `/shop?category=${categoryId}` : '/shop');
   };
 
   const toggleExpand = (id: number) => {
-    setExpandedIds(prev => {
-      const next = new Set(prev);
-      next.has(id) ? next.delete(id) : next.add(id);
-      return next;
-    });
+    setExpandedIds(prev => { const next = new Set(prev); next.has(id) ? next.delete(id) : next.add(id); return next; });
   };
 
-  // Flatten tree to find name by id
   const findCategoryName = (nodes: CategoryTreeNode[], id: number): string | null => {
     for (const n of nodes) {
       if (n.categoryId === id) return n.categoryName;
-      if (n.children) {
-        const found = findCategoryName(n.children, id);
-        if (found) return found;
-      }
+      if (n.children) { const found = findCategoryName(n.children, id); if (found) return found; }
     }
     return null;
   };
 
-  const activeCategoryName = categoryFilter
-    ? findCategoryName(categories, parseInt(categoryFilter)) || categoryFilter
-    : null;
+  const activeCategoryName = categoryFilter ? findCategoryName(categories, parseInt(categoryFilter)) || categoryFilter : null;
 
   return (
-    <div className="max-w-7xl mx-auto px-4 py-12 font-['Jost']">
-      <div className="flex flex-col lg:flex-row gap-12">
-        {/* Sidebar — categories tree */}
-        <aside className="w-full lg:w-64 flex-shrink-0">
-          <div className="sticky top-32 space-y-8">
-            <div>
-              <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 mb-6 border-b border-gray-100 pb-2">Danh mục</h3>
-              <div className="flex flex-col gap-1">
-                {/* All */}
-                <button
-                  onClick={() => handleCategoryChange(null)}
-                  className={`px-4 py-2 text-sm font-medium rounded-lg transition-all text-left flex items-center justify-between ${
-                    !categoryFilter ? 'bg-black text-white shadow-lg shadow-black/10' : 'text-gray-500 hover:bg-gray-100 hover:text-black'
-                  }`}
-                >
-                  Tất cả
-                  {!categoryFilter && <span className="material-symbols-outlined text-sm">chevron_right</span>}
-                </button>
+    <div className="bg-gray-50 min-h-screen font-['Jost']">
+      <div className="max-w-7xl mx-auto px-4 py-12">
+        <div className="flex flex-col lg:flex-row gap-10">
 
-                {/* Tree nodes */}
-                {categories.map((parent) => {
-                  const hasChildren = parent.children && parent.children.length > 0;
-                  const isExpanded = expandedIds.has(parent.categoryId);
-                  const isActive = categoryFilter === String(parent.categoryId);
+          {/* Sidebar */}
+          <aside className="w-full lg:w-60 flex-shrink-0">
+            <div className="sticky top-32 space-y-6">
+              <div>
+                <h3 className="text-[10px] font-black uppercase tracking-[0.2em] mb-4 pb-2 border-b border-gray-200 text-gray-400">Danh mục</h3>
+                <div className="flex flex-col gap-1">
+                  <button
+                    onClick={() => handleCategoryChange(null)}
+                    className={`px-3 py-2 text-sm font-medium rounded-lg transition-all text-left flex items-center justify-between ${!categoryFilter ? 'bg-black text-white' : 'text-gray-600 hover:bg-gray-100'}`}
+                  >
+                    Tất cả
+                    {!categoryFilter && <span className="material-symbols-outlined text-sm">chevron_right</span>}
+                  </button>
 
-                  return (
-                    <div key={parent.categoryId}>
-                      <div className="flex items-center gap-1">
-                        <button
-                          onClick={() => handleCategoryChange(parent.categoryId)}
-                          className={`flex-1 px-4 py-2 text-sm font-medium rounded-lg transition-all text-left ${
-                            isActive ? 'bg-black text-white shadow-lg shadow-black/10' : 'text-gray-600 hover:bg-gray-100 hover:text-black'
-                          }`}
-                        >
-                          {parent.categoryName}
-                        </button>
-                        {hasChildren && (
+                  {categories.map((parent) => {
+                    const hasChildren = parent.children && parent.children.length > 0;
+                    const isExpanded = expandedIds.has(parent.categoryId);
+                    const isActive = categoryFilter === String(parent.categoryId);
+                    return (
+                      <div key={parent.categoryId}>
+                        <div className="flex items-center gap-1">
                           <button
-                            onClick={() => toggleExpand(parent.categoryId)}
-                            className="p-1.5 text-gray-400 hover:text-black hover:bg-gray-100 rounded-lg transition"
+                            onClick={() => handleCategoryChange(parent.categoryId)}
+                            className={`flex-1 px-3 py-2 text-sm font-medium rounded-lg transition-all text-left ${isActive ? 'bg-black text-white' : 'text-gray-600 hover:bg-gray-100'}`}
                           >
-                            <span className={`material-symbols-outlined text-sm transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`}>
-                              expand_more
-                            </span>
+                            {parent.categoryName}
                           </button>
+                          {hasChildren && (
+                            <button onClick={() => toggleExpand(parent.categoryId)} className="p-1.5 rounded-lg transition text-gray-400 hover:text-black">
+                              <span className={`material-symbols-outlined text-sm transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`}>expand_more</span>
+                            </button>
+                          )}
+                        </div>
+                        {hasChildren && isExpanded && (
+                          <div className="ml-4 mt-1 flex flex-col gap-1 pl-3 border-l border-gray-200">
+                            {parent.children!.map((child) => {
+                              const isChildActive = categoryFilter === String(child.categoryId);
+                              return (
+                                <button
+                                  key={child.categoryId}
+                                  onClick={() => handleCategoryChange(child.categoryId)}
+                                  className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-all text-left ${isChildActive ? 'bg-black text-white' : 'text-gray-500 hover:bg-gray-100'}`}
+                                >
+                                  {child.categoryName}
+                                </button>
+                              );
+                            })}
+                          </div>
                         )}
                       </div>
+                    );
+                  })}
+                </div>
+              </div>
 
-                      {/* Children */}
-                      {hasChildren && isExpanded && (
-                        <div className="ml-4 mt-1 flex flex-col gap-1 border-l-2 border-gray-100 pl-3">
-                          {parent.children!.map((child) => {
-                            const isChildActive = categoryFilter === String(child.categoryId);
-                            return (
-                              <button
-                                key={child.categoryId}
-                                onClick={() => handleCategoryChange(child.categoryId)}
-                                className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-all text-left ${
-                                  isChildActive ? 'bg-black text-white' : 'text-gray-500 hover:bg-gray-100 hover:text-black'
-                                }`}
-                              >
-                                {child.categoryName}
-                              </button>
-                            );
-                          })}
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
+              <div className="hidden lg:block p-5 rounded-2xl border border-gray-100 bg-white">
+                <h4 className="text-xs font-bold uppercase tracking-widest mb-2 text-gray-800">Hỗ trợ 24/7</h4>
+                <p className="text-xs leading-relaxed text-gray-500">Cần tư vấn cấu hình? Liên hệ ngay với đội ngũ chuyên gia.</p>
+                <button className="mt-4 w-full py-2.5 rounded-xl text-[10px] font-bold uppercase tracking-widest transition border border-gray-200 text-gray-500 hover:border-black hover:text-black">
+                  Liên hệ ngay
+                </button>
               </div>
             </div>
+          </aside>
 
-            <div className="hidden lg:block bg-gray-50 p-6 rounded-2xl border border-gray-100">
-              <h4 className="text-xs font-bold uppercase tracking-widest mb-3">Hỗ trợ 24/7</h4>
-              <p className="text-xs text-gray-400 leading-relaxed">Cần tư vấn cấu hình? Liên hệ ngay với đội ngũ chuyên gia của chúng tôi.</p>
-              <button className="mt-4 w-full py-3 bg-white border border-gray-200 text-[10px] font-bold uppercase tracking-widest hover:bg-black hover:text-white transition rounded-xl">Liên hệ ngay</button>
-            </div>
-          </div>
-        </aside>
-
-        {/* Main Content */}
-        <div className="flex-1">
-          {/* Title */}
-          <div className="mb-6">
-            <h1 className="text-4xl font-light uppercase tracking-tight text-black">
-              {activeCategoryName ? (
-                <>Danh mục: <span className="font-bold">{activeCategoryName}</span></>
-              ) : searchFilter ? (
-                <>Kết quả: <span className="font-bold">"{searchFilter}"</span></>
-              ) : (
-                <>Tất cả <span className="font-bold">Sản phẩm</span></>
-              )}
-            </h1>
-            <p className="text-gray-400 mt-1 text-[10px] font-bold uppercase tracking-[0.2em]">
-              Hiển thị {pagedData?.totalElements ?? products.length} sản phẩm
-            </p>
-          </div>
-
-          {/* Filter bar */}
-          <div className="flex flex-wrap items-center gap-2 mb-8 pb-6 border-b border-gray-100">
-            {/* Price filter */}
-            <div className="relative">
-              <button
-                onClick={() => setOpenDropdown(openDropdown === 'price' ? null : 'price')}
-                className={`flex items-center gap-2 px-4 py-2 rounded-full border text-sm font-medium transition-all ${
-                  selectedPriceRange ? 'bg-black text-white border-black' : 'bg-white border-gray-200 text-gray-600 hover:border-gray-400'
-                }`}
-              >
-                <span className="material-symbols-outlined text-base">payments</span>
-                {selectedPriceRange ? selectedPriceRange.label : 'Lọc theo giá'}
-                {selectedPriceRange ? (
-                  <span
-                    role="button"
-                    onClick={(e) => { e.stopPropagation(); setSelectedPriceRange(null); setOpenDropdown(null); }}
-                    className="ml-1 hover:opacity-70 cursor-pointer"
-                  >
-                    <span className="material-symbols-outlined text-sm">close</span>
-                  </span>
-                ) : (
-                  <span className="material-symbols-outlined text-sm">{openDropdown === 'price' ? 'expand_less' : 'expand_more'}</span>
-                )}
-              </button>
-              {openDropdown === 'price' && (
-                <div className="absolute top-full left-0 mt-2 w-48 bg-white rounded-2xl shadow-xl border border-gray-100 py-2 z-30">
-                  {PRICE_RANGES.map((range) => (
-                    <button
-                      key={range.label}
-                      onClick={() => { setSelectedPriceRange(range); setOpenDropdown(null); }}
-                      className={`w-full text-left px-4 py-2.5 text-sm transition flex items-center justify-between ${
-                        selectedPriceRange?.label === range.label ? 'text-black font-bold bg-gray-50' : 'text-gray-600 hover:bg-gray-50 hover:text-black'
-                      }`}
-                    >
-                      {range.label}
-                      {selectedPriceRange?.label === range.label && <span className="material-symbols-outlined text-sm">check</span>}
-                    </button>
-                  ))}
-                </div>
-              )}
+          {/* Main */}
+          <div className="flex-1">
+            <div className="mb-6">
+              <h1 className="text-3xl font-light uppercase tracking-tight text-gray-900">
+                {activeCategoryName ? (<>Danh mục: <span className="font-bold">{activeCategoryName}</span></>) :
+                  searchFilter ? (<>Kết quả: <span className="font-bold">"{searchFilter}"</span></>) :
+                  (<>Tất cả <span className="font-bold">Sản phẩm</span></>)}
+              </h1>
+              <p className="mt-1 text-[10px] font-bold uppercase tracking-[0.2em] text-gray-400">
+                Hiển thị {pagedData?.totalElements ?? products.length} sản phẩm
+              </p>
             </div>
 
-            {/* Discount toggle */}
-            <button
-              onClick={() => setFilterDiscount(!filterDiscount)}
-              className={`flex items-center gap-2 px-4 py-2 rounded-full border text-sm font-medium transition-all ${
-                filterDiscount ? 'bg-red-500 text-white border-red-500' : 'bg-white border-gray-200 text-gray-600 hover:border-gray-400'
-              }`}
-            >
-              <span className="material-symbols-outlined text-base">local_offer</span>
-              Đang giảm giá
-              {filterDiscount && (
-                <span
-                  role="button"
-                  onClick={(e) => { e.stopPropagation(); setFilterDiscount(false); }}
-                  className="ml-1 hover:opacity-70 cursor-pointer"
+            {/* Filter bar */}
+            <div className="flex flex-wrap items-center gap-2 mb-8 pb-6 border-b border-gray-200">
+              {/* Price filter */}
+              <div className="relative">
+                <button
+                  onClick={() => setOpenDropdown(openDropdown === 'price' ? null : 'price')}
+                  className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all border ${selectedPriceRange ? 'bg-black text-white border-black' : 'bg-white border-gray-200 text-gray-600 hover:border-gray-400'}`}
                 >
-                  <span className="material-symbols-outlined text-sm">close</span>
-                </span>
-              )}
-            </button>
-
-            {/* Sort */}
-            <div className="relative">
-              <button
-                onClick={() => setOpenDropdown(openDropdown === 'sort' ? null : 'sort')}
-                className={`flex items-center gap-2 px-4 py-2 rounded-full border text-sm font-medium transition-all ${
-                  sortOrder !== 'none' ? 'bg-black text-white border-black' : 'bg-white border-gray-200 text-gray-600 hover:border-gray-400'
-                }`}
-              >
-                <span className="material-symbols-outlined text-base">
-                  {sortOrder === 'asc' ? 'arrow_upward' : sortOrder === 'desc' ? 'arrow_downward' : 'sort'}
-                </span>
-                {sortOrder === 'asc' ? 'Giá thấp → cao' : sortOrder === 'desc' ? 'Giá cao → thấp' : 'Sắp xếp'}
-                {sortOrder !== 'none' ? (
-                  <span
-                    role="button"
-                    onClick={(e) => { e.stopPropagation(); setSortOrder('none'); setOpenDropdown(null); }}
-                    className="ml-1 hover:opacity-70 cursor-pointer"
-                  >
-                    <span className="material-symbols-outlined text-sm">close</span>
-                  </span>
-                ) : (
-                  <span className="material-symbols-outlined text-sm">{openDropdown === 'sort' ? 'expand_less' : 'expand_more'}</span>
-                )}
-              </button>
-              {openDropdown === 'sort' && (
-                <div className="absolute top-full left-0 mt-2 w-48 bg-white rounded-2xl shadow-xl border border-gray-100 py-2 z-30">
-                  {[
-                    { value: 'asc' as const, label: 'Giá thấp → cao', icon: 'arrow_upward' },
-                    { value: 'desc' as const, label: 'Giá cao → thấp', icon: 'arrow_downward' },
-                  ].map((opt) => (
-                    <button
-                      key={opt.value}
-                      onClick={() => { setSortOrder(opt.value); setOpenDropdown(null); }}
-                      className={`w-full text-left px-4 py-2.5 text-sm transition flex items-center gap-2 ${
-                        sortOrder === opt.value ? 'text-black font-bold bg-gray-50' : 'text-gray-600 hover:bg-gray-50 hover:text-black'
-                      }`}
-                    >
-                      <span className="material-symbols-outlined text-sm">{opt.icon}</span>
-                      {opt.label}
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            {/* Clear all */}
-            {(selectedPriceRange || filterDiscount || sortOrder !== 'none') && (
-              <button
-                onClick={() => { setSelectedPriceRange(null); setFilterDiscount(false); setSortOrder('none'); setOpenDropdown(null); }}
-                className="flex items-center gap-1.5 px-4 py-2 rounded-full border border-dashed border-gray-300 text-sm text-gray-400 hover:text-black hover:border-black transition"
-              >
-                <span className="material-symbols-outlined text-base">filter_alt_off</span>
-                Xóa bộ lọc
-              </button>
-            )}
-          </div>
-
-          {/* Close dropdown when clicking outside */}
-          {openDropdown && (
-            <div className="fixed inset-0 z-20" onClick={() => setOpenDropdown(null)} />
-          )}
-
-          {loading && (
-            <div className="flex items-center justify-center py-20">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-            </div>
-          )}
-
-          {error && (
-            <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-6">
-              <p className="text-sm font-medium">{error}</p>
-            </div>
-          )}
-
-          {!loading && !error && (
-            <>
-              {products.length > 0 ? (
-                <>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-8">
-                    {products.map((product) => (
-                      <ProductCard key={product.productId} product={product} />
+                  <span className="material-symbols-outlined text-base">payments</span>
+                  {selectedPriceRange ? selectedPriceRange.label : 'Lọc theo giá'}
+                  {selectedPriceRange ? (
+                    <span role="button" onClick={(e) => { e.stopPropagation(); setSelectedPriceRange(null); setOpenDropdown(null); }} className="ml-1 cursor-pointer">
+                      <span className="material-symbols-outlined text-sm">close</span>
+                    </span>
+                  ) : (
+                    <span className="material-symbols-outlined text-sm">{openDropdown === 'price' ? 'expand_less' : 'expand_more'}</span>
+                  )}
+                </button>
+                {openDropdown === 'price' && (
+                  <div className="absolute top-full left-0 mt-2 w-48 rounded-2xl shadow-2xl border border-gray-100 py-2 z-30 bg-white">
+                    {PRICE_RANGES.map((range) => (
+                      <button key={range.label} onClick={() => { setSelectedPriceRange(range); setOpenDropdown(null); }}
+                        className={`w-full text-left px-4 py-2.5 text-sm transition flex items-center justify-between hover:bg-gray-50 ${selectedPriceRange?.label === range.label ? 'text-black font-bold' : 'text-gray-600'}`}
+                      >
+                        {range.label}
+                        {selectedPriceRange?.label === range.label && <span className="material-symbols-outlined text-sm">check</span>}
+                      </button>
                     ))}
                   </div>
-                  {pagedData && pagedData.totalPages > 1 && (
-                    <Pagination
-                      currentPage={currentPage}
-                      totalPages={pagedData.totalPages}
-                      onPageChange={setCurrentPage}
-                      className="mt-12"
-                    />
+                )}
+              </div>
+
+              {/* Discount toggle */}
+              <button
+                onClick={() => setFilterDiscount(!filterDiscount)}
+                className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all border ${filterDiscount ? 'bg-red-500 text-white border-red-500' : 'bg-white border-gray-200 text-gray-600 hover:border-gray-400'}`}
+              >
+                <span className="material-symbols-outlined text-base">local_offer</span>
+                Đang giảm giá
+                {filterDiscount && (
+                  <span role="button" onClick={(e) => { e.stopPropagation(); setFilterDiscount(false); }} className="ml-1 cursor-pointer">
+                    <span className="material-symbols-outlined text-sm">close</span>
+                  </span>
+                )}
+              </button>
+
+              {/* Sort */}
+              <div className="relative">
+                <button
+                  onClick={() => setOpenDropdown(openDropdown === 'sort' ? null : 'sort')}
+                  className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all border ${sortOrder !== 'none' ? 'bg-black text-white border-black' : 'bg-white border-gray-200 text-gray-600 hover:border-gray-400'}`}
+                >
+                  <span className="material-symbols-outlined text-base">{sortOrder === 'asc' ? 'arrow_upward' : sortOrder === 'desc' ? 'arrow_downward' : 'sort'}</span>
+                  {sortOrder === 'asc' ? 'Giá thấp → cao' : sortOrder === 'desc' ? 'Giá cao → thấp' : 'Sắp xếp'}
+                  {sortOrder !== 'none' ? (
+                    <span role="button" onClick={(e) => { e.stopPropagation(); setSortOrder('none'); setOpenDropdown(null); }} className="ml-1 cursor-pointer">
+                      <span className="material-symbols-outlined text-sm">close</span>
+                    </span>
+                  ) : (
+                    <span className="material-symbols-outlined text-sm">{openDropdown === 'sort' ? 'expand_less' : 'expand_more'}</span>
                   )}
-                </>
-              ) : (
-                <div className="py-32 text-center bg-gray-50 rounded-3xl border border-dashed border-gray-200">
-                  <span className="material-symbols-outlined text-6xl text-gray-200 mb-4">inventory_2</span>
-                  <h2 className="text-xl font-bold text-gray-400 uppercase tracking-widest">Không tìm thấy sản phẩm nào</h2>
-                  <p className="text-gray-400 mt-2">Vui lòng thử lại với bộ lọc khác</p>
-                  <button
-                    onClick={() => { navigate('/shop'); setSelectedPriceRange(null); setFilterDiscount(false); setSortOrder('none'); }}
-                    className="mt-6 px-8 py-3 bg-black text-white text-[11px] font-bold uppercase tracking-widest rounded-xl hover:bg-gray-800 transition"
-                  >
-                    Xem tất cả sản phẩm
-                  </button>
-                </div>
+                </button>
+                {openDropdown === 'sort' && (
+                  <div className="absolute top-full left-0 mt-2 w-48 rounded-2xl shadow-2xl border border-gray-100 py-2 z-30 bg-white">
+                    {[{ value: 'asc' as const, label: 'Giá thấp → cao', icon: 'arrow_upward' }, { value: 'desc' as const, label: 'Giá cao → thấp', icon: 'arrow_downward' }].map((opt) => (
+                      <button key={opt.value} onClick={() => { setSortOrder(opt.value); setOpenDropdown(null); }}
+                        className={`w-full text-left px-4 py-2.5 text-sm transition flex items-center gap-2 hover:bg-gray-50 ${sortOrder === opt.value ? 'text-black font-bold' : 'text-gray-600'}`}
+                      >
+                        <span className="material-symbols-outlined text-sm">{opt.icon}</span>
+                        {opt.label}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {(selectedPriceRange || filterDiscount || sortOrder !== 'none') && (
+                <button
+                  onClick={() => { setSelectedPriceRange(null); setFilterDiscount(false); setSortOrder('none'); setOpenDropdown(null); }}
+                  className="flex items-center gap-1.5 px-4 py-2 rounded-full border border-dashed border-gray-300 text-sm text-gray-400 transition hover:border-black hover:text-black"
+                >
+                  <span className="material-symbols-outlined text-base">filter_alt_off</span>
+                  Xóa bộ lọc
+                </button>
               )}
-            </>
-          )}
+            </div>
+
+            {openDropdown && <div className="fixed inset-0 z-20" onClick={() => setOpenDropdown(null)} />}
+
+            {loading && (
+              <div className="flex items-center justify-center py-20">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-black"></div>
+              </div>
+            )}
+
+            {error && (
+              <div className="px-4 py-3 rounded-lg mb-6 border border-red-200 bg-red-50 text-red-600">
+                <p className="text-sm font-medium">{error}</p>
+              </div>
+            )}
+
+            {!loading && !error && (
+              <>
+                {products.length > 0 ? (
+                  <>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
+                      {products.map((product) => (
+                        <ProductCard key={product.productId} product={product} />
+                      ))}
+                    </div>
+                    {pagedData && pagedData.totalPages > 1 && (
+                      <Pagination currentPage={currentPage} totalPages={pagedData.totalPages} onPageChange={setCurrentPage} className="mt-12" />
+                    )}
+                  </>
+                ) : (
+                  <div className="py-32 text-center rounded-3xl border border-dashed border-gray-200 bg-white">
+                    <span className="material-symbols-outlined text-6xl mb-4 block text-gray-200">inventory_2</span>
+                    <h2 className="text-xl font-bold uppercase tracking-widest text-gray-400">Không tìm thấy sản phẩm nào</h2>
+                    <p className="mt-2 text-sm text-gray-400">Vui lòng thử lại với bộ lọc khác</p>
+                    <button
+                      onClick={() => { navigate('/shop'); setSelectedPriceRange(null); setFilterDiscount(false); setSortOrder('none'); }}
+                      className="mt-6 px-8 py-3 text-[11px] font-bold uppercase tracking-widest rounded-xl transition text-white bg-black hover:bg-gray-800"
+                    >
+                      Xem tất cả sản phẩm
+                    </button>
+                  </div>
+                )}
+              </>
+            )}
+          </div>
         </div>
       </div>
     </div>

@@ -6,6 +6,7 @@ import { useCompare } from '../../context/CompareContext';
 import { productService } from '../../api/services/productService';
 import { ProductDetailResponse, ProductVariantResponse } from '../../api/types/product';
 import ProductCard from '../../components/ui/ProductCard';
+import { showToast, showConfirm } from '../../components/ui/Toast';
 
 const fmt = (v: number) => new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(v);
 
@@ -49,14 +50,14 @@ const ProductDetail: React.FC = () => {
 
   const handleAddToCart = async () => {
     if (!isAuthenticated) {
-      alert('Vui lòng đăng nhập để thêm vào giỏ hàng.');
+      showToast('Vui lòng đăng nhập để thêm vào giỏ hàng.', 'warning');
       navigate('/login');
       return;
     }
     if (!product) return;
     const variantId = selectedVariant?.variantId;
     if (!variantId) {
-      alert('Vui lòng chọn phiên bản sản phẩm.');
+      showToast('Vui lòng chọn phiên bản sản phẩm.', 'warning');
       return;
     }
     const cartItem: any = {
@@ -70,9 +71,8 @@ const ProductDetail: React.FC = () => {
     };
     try {
       for (let i = 0; i < quantity; i++) await addToCart(cartItem, variantId);
-      if (window.confirm('Đã thêm vào giỏ hàng! Bạn có muốn xem giỏ hàng ngay không?')) {
-        navigate('/cart');
-      }
+      const go = await showConfirm({ title: 'Thêm thành công', message: 'Đã thêm vào giỏ hàng! Bạn có muốn xem giỏ hàng ngay không?', confirmText: 'Xem giỏ hàng', cancelText: 'Tiếp tục mua' });
+      if (go) navigate('/cart');
     } catch {
       // error already handled in CartContext
     }
@@ -80,14 +80,14 @@ const ProductDetail: React.FC = () => {
 
   const handleBuyNow = async () => {
     if (!isAuthenticated) {
-      alert('Vui lòng đăng nhập để mua hàng.');
+      showToast('Vui lòng đăng nhập để mua hàng.', 'warning');
       navigate('/login');
       return;
     }
     if (!product) return;
     const variantId = selectedVariant?.variantId;
     if (!variantId) {
-      alert('Vui lòng chọn phiên bản sản phẩm.');
+      showToast('Vui lòng chọn phiên bản sản phẩm.', 'warning');
       return;
     }
     const cartItem: any = {

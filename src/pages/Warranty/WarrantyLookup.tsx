@@ -3,6 +3,7 @@ import { useAuth } from '../../context/AuthContext';
 import { warrantyService } from '../../api/services/warrantyService';
 import { orderService } from '../../api/services/orderService';
 import { WarrantyResponse, WarrantyStatus } from '../../api/types/warranty';
+import { showToast } from '../../components/ui/Toast';
 
 const fmt = (d: string) => new Date(d).toLocaleDateString('vi-VN');
 
@@ -36,8 +37,9 @@ const WarrantyCard: React.FC<{ w: WarrantyResponse; onClaimCreated: () => void }
       setShowClaim(false);
       setClaimNote('');
       onClaimCreated();
+      showToast('Đã gửi yêu cầu bảo hành thành công!', 'success');
     } catch (err: any) {
-      alert(err.message || 'Không thể tạo yêu cầu bảo hành');
+      showToast(err.message || 'Không thể tạo yêu cầu bảo hành', 'error');
     } finally {
       setSubmitting(false);
     }

@@ -4,6 +4,7 @@ import { Product, CartItem } from '../types/index';
 import { useAuth } from './AuthContext';
 import { cartService } from '../api/services/cartService';
 import { CartResponse } from '../api/types/cart';
+import { showToast } from '../components/ui/Toast';
 
 interface CartContextType {
   cart: CartItem[];
@@ -109,7 +110,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const addToCart = async (product: Product, variantId?: number) => {
     if (!isAuthenticated) {
-      alert('Vui lòng đăng nhập để thêm vào giỏ hàng.');
+      showToast('Vui lòng đăng nhập để thêm vào giỏ hàng.', 'warning');
       navigate('/login');
       return;
     }
@@ -168,8 +169,8 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
         errorMessage = 'Lỗi hệ thống. Sản phẩm có thể không tồn tại hoặc hết hàng.';
       }
       
-      alert(errorMessage);
-      throw error; // Re-throw to let caller handle it
+      showToast(errorMessage, 'error');
+      throw error;
     } finally {
       setLoading(false);
     }
@@ -189,7 +190,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setCart(localCart);
     } catch (error: any) {
       console.error('Failed to remove from cart:', error);
-      alert(error.message || 'Không thể xóa khỏi giỏ hàng');
+      showToast(error.message || 'Không thể xóa khỏi giỏ hàng', 'error');
     } finally {
       setLoading(false);
     }
@@ -216,7 +217,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setCart(localCart);
     } catch (error: any) {
       console.error('Failed to update cart:', error);
-      alert(error.message || 'Không thể cập nhật giỏ hàng');
+      showToast(error.message || 'Không thể cập nhật giỏ hàng', 'error');
     } finally {
       setLoading(false);
     }

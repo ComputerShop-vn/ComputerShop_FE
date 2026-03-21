@@ -12,6 +12,7 @@ import {
   REQUIRED_COMPONENTS,
 } from '../api/types/pcbuild';
 import { ProductResponse } from '../api/types/product';
+import { showToast, showConfirm } from '../components/ui/Toast';
 
 const fmt = (v: number) => new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(v);
 
@@ -108,7 +109,7 @@ const BuildPC: React.FC = () => {
   const handleSelectProduct = async (product: ProductResponse) => {
     if (!selectingSlot) return;
     const variant = product.variants?.[0];
-    if (!variant) { alert('Sản phẩm này chưa có variant.'); return; }
+    if (!variant) { showToast('Sản phẩm này chưa có variant.', 'warning'); return; }
     try {
       const updated = await pcBuildService.upsertItem({
         componentType: selectingSlot,
@@ -117,8 +118,9 @@ const BuildPC: React.FC = () => {
       });
       setBuild(updated);
       setSelectingSlot(null);
+      showToast('Đã thêm linh kiện vào cấu hình.', 'success');
     } catch (err: any) {
-      alert(err.message || 'Không thể thêm linh kiện');
+      showToast(err.message || 'Không thể thêm linh kiện', 'error');
     }
   };
 
@@ -128,20 +130,20 @@ const BuildPC: React.FC = () => {
     // Actually BE uses upsert (overwrite), so we can't "remove" via API directly.
     // We'll just clear locally and note to user they need to save a new build.
     // For now, alert user this limitation.
-    alert('Để xóa linh kiện, hãy chọn linh kiện khác để thay thế.');
+    showToast('Để xóa linh kiện, hãy chọn linh kiện khác để thay thế.', 'info');
   };
 
   const handleSaveBuild = async () => {
-    if (!buildName.trim()) { alert('Vui lòng nhập tên cấu hình'); return; }
+    if (!buildName.trim()) { showToast('Vui lòng nhập tên cấu hình', 'warning'); return; }
     setSavingName(true);
     try {
       const updated = await pcBuildService.saveBuild({ buildName: buildName.trim() });
       setBuild(updated);
       setShowSaveModal(false);
       setBuildName('');
-      alert('Đã lưu cấu hình thành công!');
+      showToast('Đã lưu cấu hình thành công!', 'success');
     } catch (err: any) {
-      alert(err.message || 'Không thể lưu cấu hình');
+      showToast(err.message || 'Không thể lưu cấu hình', 'error');
     } finally {
       setSavingName(false);
     }

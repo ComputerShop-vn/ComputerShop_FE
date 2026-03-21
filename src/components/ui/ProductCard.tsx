@@ -5,6 +5,7 @@ import { ProductResponse } from '../../api/types/product';
 import { useCart } from '../../context/CartContext';
 import { useAuth } from '../../context/AuthContext';
 import { useCompare } from '../../context/CompareContext';
+import { showToast } from './Toast';
 
 const fmt = (v: number) => new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(v);
 
@@ -43,7 +44,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
     e.stopPropagation();
     
     if (!isAuthenticated) {
-      alert('Vui lòng đăng nhập để thêm vào giỏ hàng.');
+      showToast('Vui lòng đăng nhập để thêm vào giỏ hàng.', 'warning');
       navigate('/login');
       return;
     }
