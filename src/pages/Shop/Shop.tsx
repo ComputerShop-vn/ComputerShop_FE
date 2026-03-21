@@ -81,8 +81,9 @@ const Shop: React.FC = () => {
             fetched = data.content;
             totalFromServer = data.totalElements;
           } catch {
-            const all = await productService.getAllProducts();
-            fetched = categoryId && !isNaN(categoryId) ? all.filter(p => p.categoryId === categoryId) : all;
+            fetched = await productService.getAllProducts({
+              categoryId: categoryId && !isNaN(categoryId) ? categoryId : undefined
+            });
             totalFromServer = fetched.length;
           }
         }
