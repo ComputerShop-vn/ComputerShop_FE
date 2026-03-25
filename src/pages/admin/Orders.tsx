@@ -30,28 +30,29 @@ const AdminOrders: React.FC = () => {
   const [filter, setFilter] = useState<'ALL' | 'FULL' | 'INSTALLMENT'>('ALL');
 
   const fetchOrders = async (page = currentPage) => {
+    setLoading(true);
+    setError(null);
     try {
-      setLoading(true);
-      setError(null);
       try {
         const data = await orderService.getAllOrdersPaged({ page, size: PAGE_SIZE });
         setPagedData(data);
         setOrders(data.content);
-      } catch {
-        const all = await orderService.getAllOrders();
-        const start = page * PAGE_SIZE;
-        const content = all.slice(start, start + PAGE_SIZE);
-        setOrders(content);
-        setPagedData({
-          content,
-          page,
-          size: PAGE_SIZE,
-          totalElements: all.length,
-          totalPages: Math.ceil(all.length / PAGE_SIZE),
-        });
-      }
-    } catch (err: any) {
-      setError(err.message || 'Không thể tải danh sách đơn hàng');
+        return;
+      } catch { /* fallback */ }
+
+      const all = await orderService.getAllOrders();
+      const start = page * PAGE_SIZE;
+      const content = all.slice(start, start + PAGE_SIZE);
+      setOrders(content);
+      setPagedData({
+        content,
+        number: page,
+        size: PAGE_SIZE,
+        totalElements: all.length,
+        totalPages: Math.ceil(all.length / PAGE_SIZE),
+      });
+    } catch {
+      setError('Không thể tải danh sách đơn hàng. Vui lòng kiểm tra quyền truy cập.');
     } finally {
       setLoading(false);
     }

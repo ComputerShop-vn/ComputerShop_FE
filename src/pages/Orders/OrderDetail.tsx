@@ -109,7 +109,7 @@ const OrderDetail: React.FC = () => {
   const canCancel = ['PENDING', 'CONFIRMED'].includes(order.status);
 
   // Find next unpaid installment
-  const nextUnpaid = order.payments?.find(p => p.status === 'UNPAID' || p.status === 'PENDING');
+  const nextUnpaid = order.payments?.find(p => p.status === 'UNPAID' || p.status === 'OVERDUE');
   const hasUnpaidInstallment = order.paymentType === 'INSTALLMENT' && !!nextUnpaid;
   const paidCount = order.payments?.filter(p => p.status === 'PAID').length ?? 0;
   const totalCount = order.payments?.length ?? 0;

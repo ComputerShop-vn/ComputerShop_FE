@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Link, useLocation, Navigate, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 
@@ -15,6 +15,13 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children, title, subtitle, ac
   const location = useLocation();
   const navigate = useNavigate();
   const { user, isAuthenticated, loading, logout } = useAuth();
+
+  // Must be before any early returns — Rules of Hooks
+  const [groupOpen, setGroupOpen] = useState(() =>
+    ['/admin/products', '/admin/categories', '/admin/brands', '/admin/attributes',
+     '/staff/products', '/staff/categories', '/staff/brands', '/staff/attributes']
+      .includes(location.pathname)
+  );
 
   const handleLogout = async () => {
     if (window.confirm('Bạn có chắc chắn muốn đăng xuất?')) {
@@ -57,16 +64,26 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children, title, subtitle, ac
 
   const staffNavItems = [
     { path: `${prefix}`, label: 'Tổng Quan', icon: 'dashboard' },
-    { path: `${prefix}/products`, label: 'Sản Phẩm', icon: 'inventory_2' },
-    { path: `${prefix}/categories`, label: 'Danh Mục', icon: 'category' },
-    { path: `${prefix}/brands`, label: 'Thương Hiệu', icon: 'branding_watermark' },
-    { path: `${prefix}/attributes`, label: 'Thuộc Tính', icon: 'label' },
+    {
+      label: 'Kho Hàng', icon: 'inventory_2', group: true,
+      children: [
+        { path: `${prefix}/products`,   label: 'Sản Phẩm',    icon: 'inventory_2' },
+        { path: `${prefix}/categories`, label: 'Danh Mục',    icon: 'category' },
+        { path: `${prefix}/brands`,     label: 'Thương Hiệu', icon: 'branding_watermark' },
+        { path: `${prefix}/attributes`, label: 'Thuộc Tính',  icon: 'label' },
+      ],
+    },
     { path: `${prefix}/blogs`, label: 'Blogs', icon: 'article' },
     { path: `${prefix}/orders`, label: 'Đơn Hàng', icon: 'shopping_cart' },
     { path: `${prefix}/promotions`, label: 'Khuyến Mãi', icon: 'sell' },
     { path: `${prefix}/installment-packages`, label: 'Gói Trả Góp', icon: 'credit_card' },
     { path: `${prefix}/warranties`, label: 'Bảo Hành', icon: 'verified_user' },
-  ];
+  ] as const;
+
+  type NavItem = typeof staffNavItems[number];
+
+  const groupPaths = [`${prefix}/products`, `${prefix}/categories`, `${prefix}/brands`, `${prefix}/attributes`];
+  const isGroupActive = groupPaths.includes(location.pathname);
 
   const adminNavItems = [
     { path: `/admin/users`, label: 'Người Dùng', icon: 'group' },
@@ -94,17 +111,57 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children, title, subtitle, ac
         </div>
         <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
           {staffNavItems.map((item) => {
-            const isActive = location.pathname === item.path;
+            if ('group' in item && item.group) {
+              return (
+                <div key={item.label}>
+                  <button
+                    onClick={() => setGroupOpen(o => !o)}
+                    className={`w-full flex items-center justify-between px-4 py-3 text-sm font-medium rounded-lg transition ${
+                      isGroupActive ? 'bg-blue-50 text-blue-600 font-bold' : 'text-gray-600 hover:bg-gray-50'
+                    }`}
+                  >
+                    <div className="flex items-center">
+                      <span className="material-symbols-outlined mr-3 text-xl">{item.icon}</span>
+                      {item.label}
+                    </div>
+                    <span className={`material-symbols-outlined text-base transition-transform duration-200 ${groupOpen ? 'rotate-180' : ''}`}>
+                      expand_more
+                    </span>
+                  </button>
+                  {groupOpen && (
+                    <div className="ml-4 mt-1 space-y-1 border-l-2 border-blue-100 pl-3">
+                      {item.children.map(child => {
+                        const isActive = location.pathname === child.path;
+                        return (
+                          <Link
+                            key={child.path}
+                            to={child.path}
+                            className={`flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition ${
+                              isActive ? 'bg-blue-50 text-blue-600 font-bold' : 'text-gray-500 hover:bg-gray-50 hover:text-gray-800'
+                            }`}
+                          >
+                            <span className="material-symbols-outlined mr-3 text-lg">{child.icon}</span>
+                            {child.label}
+                          </Link>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              );
+            }
+            const flat = item as { path: string; label: string; icon: string };
+            const isActive = location.pathname === flat.path;
             return (
               <Link
-                key={item.path}
-                to={item.path}
+                key={flat.path}
+                to={flat.path}
                 className={`flex items-center px-4 py-3 text-sm font-medium rounded-lg transition ${
                   isActive ? 'bg-blue-50 text-blue-600 font-bold' : 'text-gray-600 hover:bg-gray-50'
                 }`}
               >
-                <span className="material-symbols-outlined mr-3 text-xl">{item.icon}</span>
-                {item.label}
+                <span className="material-symbols-outlined mr-3 text-xl">{flat.icon}</span>
+                {flat.label}
               </Link>
             );
           })}

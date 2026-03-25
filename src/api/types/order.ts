@@ -57,7 +57,7 @@ export interface PlaceOrderRequest {
   recipientName: string;
   recipientPhone: string;
   shippingAddress: string;
-  paymentType: 'FULL' | 'INSTALLMENT';
+  paymentType: 'FULL' | 'INSTALLMENT' | 'COD';
   packageId?: number; // Only for INSTALLMENT
 }
 

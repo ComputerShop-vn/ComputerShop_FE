@@ -15,7 +15,7 @@ const Checkout: React.FC = () => {
   const { cart, totalPrice, clearCart } = useCart();
   const { user: authUser } = useAuth();
   const navigate = useNavigate();
-  const [paymentMethod, setPaymentMethod] = useState<'cod' | 'bank' | 'installment'>('cod');
+  const [paymentMethod, setPaymentMethod] = useState<'cod' | 'full' | 'installment'>('cod');
   const [installmentPackages, setInstallmentPackages] = useState<InstallmentPackageResponse[]>([]);
   const [selectedPackage, setSelectedPackage] = useState<InstallmentPackageResponse | null>(null);
   const [preview, setPreview] = useState<InstallmentPreviewResponse | null>(null);
@@ -77,19 +77,11 @@ const Checkout: React.FC = () => {
     
     try {
       // Map payment method to backend format
-      let paymentType = 'CASH';
-      if (paymentMethod === 'bank') {
-        paymentType = 'BANK_TRANSFER';
-      } else if (paymentMethod === 'installment') {
-        paymentType = 'INSTALLMENT';
-      }
-
-      // Create order - map to backend format
       const orderData: any = {
         recipientName: formData.fullName,
         recipientPhone: formData.phoneNumber,
         shippingAddress: formData.address,
-        paymentType: paymentMethod === 'installment' ? 'INSTALLMENT' : 'FULL',
+        paymentType: paymentMethod === 'installment' ? 'INSTALLMENT' : paymentMethod === 'full' ? 'FULL' : 'COD',
       };
 
       // Only add packageId if payment method is installment
@@ -101,8 +93,8 @@ const Checkout: React.FC = () => {
       const order = await orderService.placeOrder(orderData);
       console.log('Order created:', order);
 
-      // If payment method is bank transfer OR installment, redirect to VNPay
-      if (paymentMethod === 'bank' || paymentMethod === 'installment') {
+      // If payment method is full (VNPay) OR installment, redirect to VNPay
+      if (paymentMethod === 'full' || paymentMethod === 'installment') {
         try {
           const payment = await paymentService.createPayment(order.orderId);
           if (!payment.paymentUrl) throw new Error('Không nhận được link thanh toán từ server.');
@@ -200,11 +192,11 @@ const Checkout: React.FC = () => {
                 </button>
                 <button 
                   type="button"
-                  onClick={() => setPaymentMethod('bank')}
-                  className={`p-6 rounded-2xl border-2 transition-all text-left flex flex-col gap-3 ${paymentMethod === 'bank' ? 'border-black bg-black text-white' : 'border-gray-100 hover:border-gray-200'}`}
+                  onClick={() => setPaymentMethod('full')}
+                  className={`p-6 rounded-2xl border-2 transition-all text-left flex flex-col gap-3 ${paymentMethod === 'full' ? 'border-black bg-black text-white' : 'border-gray-100 hover:border-gray-200'}`}
                 >
                   <span className="material-symbols-outlined">account_balance</span>
-                  <span className="text-xs font-bold uppercase tracking-widest">Chuyển khoản</span>
+                  <span className="text-xs font-bold uppercase tracking-widest">Thanh toán đầy đủ</span>
                   <span className="text-[10px] opacity-60">Thanh toán qua VNPay</span>
                 </button>
                 <button 
@@ -218,8 +210,8 @@ const Checkout: React.FC = () => {
                 </button>
               </div>
 
-              {/* Bank transfer info */}
-              {paymentMethod === 'bank' && (
+              {/* VNPay info */}
+              {paymentMethod === 'full' && (
                 <div className="mt-6 p-6 bg-blue-50 rounded-2xl border border-blue-100 animate-in fade-in slide-in-from-top-4 duration-300">
                   <div className="flex items-start gap-3">
                     <span className="material-symbols-outlined text-blue-500 mt-0.5">info</span>
@@ -234,7 +226,6 @@ const Checkout: React.FC = () => {
                 </div>
               )}
 
-              {/* Installment Options */}
               {paymentMethod === 'installment' && (
                 <div className="mt-8 p-8 bg-gray-50 rounded-3xl">
                   <h4 className="text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-6">Chọn gói trả góp</h4>
@@ -313,11 +304,11 @@ const Checkout: React.FC = () => {
             >
               {isProcessing
                 ? 'Đang xử lý...'
-                : paymentMethod === 'bank'
+                : paymentMethod === 'full'
                   ? 'Đặt hàng & Thanh toán VNPay'
                   : paymentMethod === 'installment'
                     ? 'Đặt hàng & Thanh toán trả trước'
-                    : 'Xác nhận đặt hàng'
+                    : 'Xác nhận đặt hàng (COD)'
               }
             </button>
           </form>

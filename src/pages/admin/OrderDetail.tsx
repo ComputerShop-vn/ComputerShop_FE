@@ -75,7 +75,6 @@ const OrderDetail: React.FC = () => {
   const getPaymentStatusColor = (status: string) => {
     switch (status.toUpperCase()) {
       case 'PAID': return 'bg-green-100 text-green-600';
-      case 'PENDING': return 'bg-yellow-100 text-yellow-600';
       case 'UNPAID': return 'bg-orange-100 text-orange-600';
       case 'OVERDUE': return 'bg-red-100 text-red-600';
       default: return 'bg-gray-100 text-gray-600';
