@@ -80,18 +80,17 @@ const Dashboard: React.FC = () => {
     .sort((a, b) => parseInt(a[0].slice(1)) - parseInt(b[0].slice(1)))
     .map(([name, rev]) => ({ name, rev: Math.round(rev) }));
 
-  // Tồn kho theo category
-  const stockByCategory: Record<string, { total: number; inStock: number }> = {};
+  // Tồn kho theo category — tổng stockQuantity thực từ variants
+  const stockByCategory: Record<string, number> = {};
   products.forEach(p => {
     const cat = p.categoryName || 'Khác';
-    if (!stockByCategory[cat]) stockByCategory[cat] = { total: 0, inStock: 0 };
-    const stock = p.stockQuantity ?? p.variants?.reduce((s, v) => s + v.stockQuantity, 0) ?? 0;
-    stockByCategory[cat].total += 1;
-    if (stock > 0) stockByCategory[cat].inStock += 1;
+    const stock = p.variants?.reduce((s, v) => s + (v.stockQuantity ?? 0), 0) ?? 0;
+    stockByCategory[cat] = (stockByCategory[cat] || 0) + stock;
   });
+  const maxStock = Math.max(...Object.values(stockByCategory), 1);
   const stockItems = Object.entries(stockByCategory)
-    .map(([name, { total, inStock }]) => ({ name, pct: total > 0 ? Math.round((inStock / total) * 100) : 0 }))
-    .sort((a, b) => b.pct - a.pct)
+    .map(([name, qty]) => ({ name, qty, pct: Math.round((qty / maxStock) * 100) }))
+    .sort((a, b) => b.qty - a.qty)
     .slice(0, 5);
 
   const barColors = ['blue', 'indigo', 'orange', 'red', 'green'];
@@ -195,7 +194,7 @@ const Dashboard: React.FC = () => {
                     <div key={cat.name}>
                       <div className="flex justify-between text-xs font-bold mb-2 uppercase tracking-wide">
                         <span className="truncate max-w-[140px]">{cat.name}</span>
-                        <span>{cat.pct}%</span>
+                        <span className="text-gray-500 font-mono">{cat.qty.toLocaleString('vi-VN')} sp</span>
                       </div>
                       <div className="w-full bg-gray-100 h-2 rounded-full overflow-hidden">
                         <div

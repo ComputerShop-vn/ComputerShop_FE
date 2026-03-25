@@ -14,6 +14,7 @@ export default defineConfig(({ mode }) => {
             changeOrigin: true,
           },
         },
+        historyApiFallback: true,
       },
       plugins: [react()],
       define: {

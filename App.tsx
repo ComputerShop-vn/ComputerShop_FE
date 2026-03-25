@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { HashRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import Header from './src/components/layout/Header';
 import Footer from './src/components/layout/Footer';
 import Home from './src/pages/Home/Home';
@@ -37,6 +37,7 @@ import OrderList from './src/pages/Orders/OrderList';
 import OrderDetail from './src/pages/Orders/OrderDetail';
 import WarrantyLookup from './src/pages/Warranty/WarrantyLookup';
 import AdminWarranties from './src/pages/admin/Warranties';
+import AdminReports from './src/pages/admin/Reports';
 import PaymentCallback from './src/pages/PaymentCallback';
 import Profile from './src/pages/Profile/Profile';
 
@@ -65,6 +66,7 @@ const App: React.FC = () => {
               <Route path="/admin/blogs" element={<AdminBlogs />} />
               <Route path="/admin/users" element={<AdminUsers />} />
               <Route path="/admin/warranties" element={<AdminWarranties />} />
+              <Route path="/admin/reports" element={<AdminReports />} />
 
               {/* Staff routes - same pages, different prefix */}
               <Route path="/staff" element={<Dashboard />} />
@@ -78,6 +80,7 @@ const App: React.FC = () => {
               <Route path="/staff/attributes" element={<AdminAttributes />} />
               <Route path="/staff/blogs" element={<AdminBlogs />} />
               <Route path="/staff/warranties" element={<AdminWarranties />} />
+              <Route path="/staff/reports" element={<AdminReports />} />
               
               {/* Auth routes */}
               <Route path="/login" element={<Login />} />

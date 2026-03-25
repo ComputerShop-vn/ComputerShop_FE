@@ -78,6 +78,7 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children, title, subtitle, ac
     { path: `${prefix}/promotions`, label: 'Khuyến Mãi', icon: 'sell' },
     { path: `${prefix}/installment-packages`, label: 'Gói Trả Góp', icon: 'credit_card' },
     { path: `${prefix}/warranties`, label: 'Bảo Hành', icon: 'verified_user' },
+    { path: `${prefix}/reports`, label: 'Báo Cáo', icon: 'bar_chart' },
   ] as const;
 
   type NavItem = typeof staffNavItems[number];

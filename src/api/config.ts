@@ -96,6 +96,14 @@ export const API_ENDPOINTS = {
   CLAIM_BY_ID: (id: number) => `${API_VERSION}/claims/${id}`,
   CLAIMS_BY_WARRANTY: (warrantyId: number) => `${API_VERSION}/claims/warranty/${warrantyId}`,
 
+  // Reports
+  REPORTS_REVENUE_TIME: `${API_VERSION}/reports/revenue/time`,
+  REPORTS_REVENUE_TIME_EXPORT: `${API_VERSION}/reports/revenue/time/export`,
+  REPORTS_REVENUE_PRODUCT: `${API_VERSION}/reports/revenue/product`,
+  REPORTS_REVENUE_PRODUCT_EXPORT: `${API_VERSION}/reports/revenue/product/export`,
+  REPORTS_REVENUE_INSTALLMENT: `${API_VERSION}/reports/revenue/installment`,
+  REPORTS_REVENUE_INSTALLMENT_EXPORT: `${API_VERSION}/reports/revenue/installment/export`,
+
   // Payment
   PAYMENT_CREATE: `${API_VERSION}/orders/payment/createPayment`,
   PAYMENT_CALLBACK: `${API_VERSION}/orders/payment/callback`,

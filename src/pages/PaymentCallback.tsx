@@ -11,8 +11,6 @@ const PaymentCallback: React.FC = () => {
   const [orderId, setOrderId] = useState<string | null>(null);
 
   useEffect(() => {
-    // HashRouter puts query params after the hash: /#/payment-callback?vnp_...
-    // useSearchParams handles this correctly in react-router v6 with HashRouter
     const responseCode = searchParams.get('vnp_ResponseCode');
     const transactionStatus = searchParams.get('vnp_TransactionStatus');
     const txnRef = searchParams.get('vnp_TxnRef');
