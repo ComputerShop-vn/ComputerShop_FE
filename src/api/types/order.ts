@@ -37,7 +37,9 @@ export interface OrderResponse {
   username?: string;
   totalAmount: number;
   status: string; // PENDING, CONFIRMED, DELIVERED, COMPLETED, CANCELLED, PAID, FAILED
-  paymentType: string; // FULL, INSTALLMENT
+  paymentType: string; // FULL, INSTALLMENT, COD (legacy FE field)
+  paymentMethod?: string; // COD, VNPAY
+  paymentMode?: string; // FULL, INSTALLMENT
   orderDate?: string;
   items?: OrderItemResponse[];
   payments?: PaymentScheduleResponse[];
@@ -57,8 +59,9 @@ export interface PlaceOrderRequest {
   recipientName: string;
   recipientPhone: string;
   shippingAddress: string;
-  paymentType: 'FULL' | 'INSTALLMENT' | 'COD';
-  packageId?: number; // Only for INSTALLMENT
+  paymentMethod: 'COD' | 'VNPAY';
+  paymentMode: 'FULL' | 'INSTALLMENT';
+  packageId?: number; // Required for INSTALLMENT
 }
 
 export interface UpdateOrderStatusRequest {

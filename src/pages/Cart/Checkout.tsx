@@ -77,14 +77,18 @@ const Checkout: React.FC = () => {
     
     try {
       // Map payment method to backend format
+      const backendPaymentMethod = paymentMethod === 'cod' ? 'COD' : 'VNPAY';
+      const backendPaymentMode = paymentMethod === 'installment' ? 'INSTALLMENT' : 'FULL';
+
       const orderData: any = {
         recipientName: formData.fullName,
         recipientPhone: formData.phoneNumber,
         shippingAddress: formData.address,
-        paymentType: paymentMethod === 'installment' ? 'INSTALLMENT' : paymentMethod === 'full' ? 'FULL' : 'COD',
+        paymentMethod: backendPaymentMethod,
+        paymentMode: backendPaymentMode,
       };
 
-      // Only add packageId if payment method is installment
+      // Only add packageId if payment mode is installment
       if (paymentMethod === 'installment' && selectedPackage) {
         orderData.packageId = selectedPackage.packageId;
       }
@@ -98,7 +102,6 @@ const Checkout: React.FC = () => {
         try {
           const payment = await paymentService.createPayment(order.orderId);
           if (!payment.paymentUrl) throw new Error('Không nhận được link thanh toán từ server.');
-          await clearCart();
           paymentService.redirectToPayment(payment.paymentUrl);
           return;
         } catch (paymentError: any) {

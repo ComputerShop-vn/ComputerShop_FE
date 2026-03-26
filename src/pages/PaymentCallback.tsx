@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams, useLocation } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
+import { paymentService } from '../api/services/paymentService';
 
 const PaymentCallback: React.FC = () => {
   const [searchParams] = useSearchParams();
@@ -11,40 +12,67 @@ const PaymentCallback: React.FC = () => {
   const [orderId, setOrderId] = useState<string | null>(null);
 
   useEffect(() => {
-    const responseCode = searchParams.get('vnp_ResponseCode');
-    const transactionStatus = searchParams.get('vnp_TransactionStatus');
-    const txnRef = searchParams.get('vnp_TxnRef');
-
-    // Extract orderId from txnRef — BE format: "XXXXXXXX_orderId"
-    let extractedOrderId: string | null = null;
-    if (txnRef) {
-      const parts = txnRef.split('_');
-      if (parts.length >= 2) {
-        extractedOrderId = parts[parts.length - 1];
-        setOrderId(extractedOrderId);
-      }
-    }
+    const orderIdQuery = searchParams.get('orderId');
+    const installmentNoQuery = searchParams.get('installmentNo');
 
     const isSuccessPath = location.pathname.includes('payment-success');
     const isFailedPath = location.pathname.includes('payment-failed');
-    // VNPay success: responseCode === '00' AND transactionStatus === '00'
-    const isVnPaySuccess = responseCode === '00' && transactionStatus === '00';
-    const isVnPayFailed = responseCode !== null && responseCode !== '00';
 
-    if (isSuccessPath || isVnPaySuccess) {
+    const orderIdFromPath = orderIdQuery ? Number(orderIdQuery) : null;
+    const installmentNo =
+      installmentNoQuery !== null && installmentNoQuery !== '' ? Number(installmentNoQuery) : undefined;
+
+    const isPaymentSuccess = (s: unknown): boolean => {
+      const v = String(s ?? '').trim().toLowerCase();
+      return ['success', 'paid', 'completed', 'ok', '00', 'true', '1'].includes(v);
+    };
+
+    if (orderIdFromPath) {
+      setOrderId(String(orderIdFromPath));
+      (async () => {
+        try {
+          setStatus('processing');
+          // BE cập nhật trạng thái qua IPN, có thể trễ so với callback redirect.
+          for (let attempt = 1; attempt <= 6; attempt++) {
+            const result = await paymentService.getPaymentResult(orderIdFromPath, installmentNo);
+            if (isPaymentSuccess(result.status)) {
+              setStatus('success');
+              await clearCart().catch(console.error);
+              setTimeout(() => {
+                navigate(`/orders/${orderIdFromPath}`, { replace: true });
+              }, 1200);
+              return;
+            }
+            if (attempt < 6) {
+              await new Promise(res => setTimeout(res, 1500));
+            }
+          }
+          setStatus('failed');
+          setTimeout(() => navigate('/cart', { replace: true }), 1200);
+        } catch (err) {
+          // Fallback if payment-result endpoint fails unexpectedly.
+          if (isSuccessPath) {
+            setStatus('success');
+            clearCart().catch(console.error);
+            setTimeout(() => navigate(`/orders/${orderIdFromPath}`, { replace: true }), 1500);
+          } else {
+            setStatus('failed');
+            setTimeout(() => navigate('/cart', { replace: true }), 1500);
+          }
+        }
+      })();
+      return;
+    }
+
+    if (isSuccessPath) {
       setStatus('success');
       clearCart().catch(console.error);
-      setTimeout(() => {
-        navigate(extractedOrderId ? `/orders/${extractedOrderId}` : '/orders', { replace: true });
-      }, 3000);
-    } else if (isFailedPath || isVnPayFailed) {
+      setTimeout(() => navigate('/orders', { replace: true }), 1500);
+    } else if (isFailedPath) {
       setStatus('failed');
-      setTimeout(() => {
-        navigate('/cart', { replace: true });
-      }, 3000);
+      setTimeout(() => navigate('/cart', { replace: true }), 1500);
     }
-    // If no VNPay params yet, stay in 'processing' briefly then check again
-  }, [searchParams, location.pathname]);
+  }, [searchParams, location.pathname, navigate, clearCart]);
 
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4 font-['Jost']">

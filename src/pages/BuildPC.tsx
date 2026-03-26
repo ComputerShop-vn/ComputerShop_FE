@@ -3,6 +3,8 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { pcBuildService } from '../api/services/pcBuildService';
 import { productService } from '../api/services/productService';
+import { userService } from '../api/services/userService';
+import { installmentService } from '../api/services/installmentService';
 import {
   PCBuildResponse,
   PCBuildItemResponse,
@@ -12,7 +14,10 @@ import {
   REQUIRED_COMPONENTS,
 } from '../api/types/pcbuild';
 import { ProductResponse } from '../api/types/product';
-import { showToast, showConfirm } from '../components/ui/Toast';
+import { InstallmentPackageResponse } from '../api/types/installment';
+import { PlaceOrderRequest } from '../api/types/order';
+import { paymentService } from '../api/services/paymentService';
+import { showToast } from '../components/ui/Toast';
 
 const fmt = (v: number) => new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(v);
 
@@ -36,6 +41,18 @@ const BuildPC: React.FC = () => {
   const [slotLoading, setSlotLoading] = useState(false);
   const [showSaveModal, setShowSaveModal] = useState(false);
   const [buildName, setBuildName] = useState('');
+  const [myBuilds, setMyBuilds] = useState<PCBuildResponse[]>([]);
+  const [loadingMyBuilds, setLoadingMyBuilds] = useState(false);
+  const [showOrderModal, setShowOrderModal] = useState(false);
+  const [placingOrder, setPlacingOrder] = useState(false);
+  const [installmentPackages, setInstallmentPackages] = useState<InstallmentPackageResponse[]>([]);
+  const [orderForm, setOrderForm] = useState<PlaceOrderRequest>({
+    recipientName: '',
+    recipientPhone: '',
+    shippingAddress: '',
+    paymentMethod: 'COD',
+    paymentMode: 'FULL',
+  });
 
   const fetchDraft = useCallback(async () => {
     if (!isAuthenticated) { setLoading(false); return; }
@@ -52,6 +69,38 @@ const BuildPC: React.FC = () => {
   }, [isAuthenticated]);
 
   useEffect(() => { fetchDraft(); }, [fetchDraft]);
+
+  const fetchMyBuilds = useCallback(async () => {
+    if (!isAuthenticated) return;
+    setLoadingMyBuilds(true);
+    try {
+      const data = await pcBuildService.getMyBuilds();
+      setMyBuilds(data);
+    } catch {
+      setMyBuilds([]);
+    } finally {
+      setLoadingMyBuilds(false);
+    }
+  }, [isAuthenticated]);
+
+  useEffect(() => { fetchMyBuilds(); }, [fetchMyBuilds]);
+
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    userService.getMyProfile()
+      .then(p => {
+        setOrderForm(prev => ({
+          ...prev,
+          recipientName: p.username || prev.recipientName,
+          recipientPhone: p.phoneNumber || prev.recipientPhone,
+        }));
+      })
+      .catch(() => {});
+
+    installmentService.getActivePackages()
+      .then(setInstallmentPackages)
+      .catch(() => setInstallmentPackages([]));
+  }, [isAuthenticated]);
 
   // Get item for a slot
   const getItem = (slot: ComponentType): PCBuildItemResponse | undefined =>
@@ -76,7 +125,15 @@ const BuildPC: React.FC = () => {
             targetComponentType: slot,
           });
           if (compat.categoryId) {
-            const products = await productService.getAllProducts({ categoryId: compat.categoryId });
+            const attributes = (compat.hints || []).map(h => {
+              const op = (h.operator || 'eq').toLowerCase();
+              if (op === 'eq') return `${h.attributeName}:${h.value}`;
+              return `${h.attributeName}:${op}:${h.value}`;
+            });
+            const products = await productService.getAllProducts({
+              categoryId: compat.categoryId,
+              attributes,
+            } as any);
             setSlotProducts(products);
             return;
           }
@@ -139,6 +196,7 @@ const BuildPC: React.FC = () => {
     try {
       const updated = await pcBuildService.saveBuild({ buildName: buildName.trim() });
       setBuild(updated);
+      await fetchMyBuilds();
       setShowSaveModal(false);
       setBuildName('');
       showToast('Đã lưu cấu hình thành công!', 'success');
@@ -150,7 +208,44 @@ const BuildPC: React.FC = () => {
   };
 
   const handleOrderBuild = () => {
-    navigate('/checkout');
+    if (missingRequired.length > 0) {
+      showToast('Cần chọn đủ linh kiện bắt buộc', 'warning');
+      return;
+    }
+    setShowOrderModal(true);
+  };
+
+  const submitOrderFromBuild = async () => {
+    if (!orderForm.recipientName.trim() || !orderForm.recipientPhone.trim() || !orderForm.shippingAddress.trim()) {
+      showToast('Vui lòng nhập đủ thông tin giao hàng', 'warning');
+      return;
+    }
+    if (orderForm.paymentMode === 'INSTALLMENT' && !orderForm.packageId) {
+      showToast('Vui lòng chọn gói trả góp', 'warning');
+      return;
+    }
+
+    setPlacingOrder(true);
+    try {
+      const order = await pcBuildService.orderFromDraft(orderForm);
+      await fetchMyBuilds();
+      setShowOrderModal(false);
+
+      if (orderForm.paymentMethod === 'VNPAY') {
+        const installmentNo = orderForm.paymentMode === 'INSTALLMENT' ? 1 : undefined;
+        const payment = await paymentService.createPayment(order.orderId, undefined, installmentNo);
+        if (!payment.paymentUrl) throw new Error('Không nhận được link thanh toán.');
+        paymentService.redirectToPayment(payment.paymentUrl);
+        return;
+      }
+
+      showToast('Đặt hàng từ cấu hình thành công!', 'success');
+      navigate(`/orders/${order.orderId}`);
+    } catch (err: any) {
+      showToast(err.message || 'Không thể đặt hàng từ build', 'error');
+    } finally {
+      setPlacingOrder(false);
+    }
   };
 
   const missingRequired = REQUIRED_COMPONENTS.filter(c => !getItem(c));
@@ -200,6 +295,34 @@ const BuildPC: React.FC = () => {
         </div>
       ) : (
         <div className="max-w-5xl mx-auto px-4 mt-12">
+          <div className="mb-6 bg-white rounded-2xl border border-gray-100 p-5">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-[11px] font-black uppercase tracking-widest text-gray-400">Các cấu hình đã tạo</h3>
+              <button
+                onClick={fetchMyBuilds}
+                className="text-[10px] font-bold uppercase tracking-widest text-gray-400 hover:text-black"
+              >
+                Làm mới
+              </button>
+            </div>
+            {loadingMyBuilds ? (
+              <p className="text-sm text-gray-400">Đang tải...</p>
+            ) : myBuilds.length === 0 ? (
+              <p className="text-sm text-gray-400 italic">Chưa có cấu hình nào.</p>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                {myBuilds.slice(0, 6).map(b => (
+                  <div key={b.buildId} className="p-3 rounded-xl bg-gray-50 border border-gray-100">
+                    <p className="text-xs font-bold text-black truncate">{b.buildName || `Build #${b.buildId}`}</p>
+                    <p className="text-[10px] text-gray-500 mt-1">
+                      Trạng thái: <span className="font-semibold">{b.status}</span> • {fmt(b.totalPrice || 0)}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
           <div className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden">
             {COMPONENT_SLOTS.map((slot, index) => {
               const item = getItem(slot);
@@ -384,6 +507,91 @@ const BuildPC: React.FC = () => {
               </button>
               <button
                 onClick={() => setShowSaveModal(false)}
+                className="px-6 py-3 border border-gray-200 rounded-xl text-sm font-bold hover:bg-gray-50 transition"
+              >
+                Hủy
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Order build modal */}
+      {showOrderModal && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setShowOrderModal(false)} />
+          <div className="relative bg-white rounded-2xl shadow-2xl p-8 w-full max-w-xl">
+            <h2 className="text-lg font-bold mb-4">Đặt hàng từ cấu hình</h2>
+            <div className="space-y-3">
+              <input
+                type="text"
+                placeholder="Người nhận"
+                value={orderForm.recipientName}
+                onChange={e => setOrderForm(prev => ({ ...prev, recipientName: e.target.value }))}
+                className="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-black"
+              />
+              <input
+                type="text"
+                placeholder="Số điện thoại"
+                value={orderForm.recipientPhone}
+                onChange={e => setOrderForm(prev => ({ ...prev, recipientPhone: e.target.value }))}
+                className="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-black"
+              />
+              <input
+                type="text"
+                placeholder="Địa chỉ giao hàng"
+                value={orderForm.shippingAddress}
+                onChange={e => setOrderForm(prev => ({ ...prev, shippingAddress: e.target.value }))}
+                className="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-black"
+              />
+
+              <div className="grid grid-cols-2 gap-3">
+                <button
+                  onClick={() => setOrderForm(prev => ({ ...prev, paymentMethod: 'COD', paymentMode: 'FULL', packageId: undefined }))}
+                  className={`py-3 rounded-xl text-xs font-bold uppercase tracking-widest border ${orderForm.paymentMethod === 'COD' ? 'bg-black text-white border-black' : 'bg-white text-gray-600 border-gray-200'}`}
+                >
+                  COD
+                </button>
+                <button
+                  onClick={() => setOrderForm(prev => ({ ...prev, paymentMethod: 'VNPAY', paymentMode: 'FULL', packageId: undefined }))}
+                  className={`py-3 rounded-xl text-xs font-bold uppercase tracking-widest border ${orderForm.paymentMethod === 'VNPAY' && orderForm.paymentMode === 'FULL' ? 'bg-black text-white border-black' : 'bg-white text-gray-600 border-gray-200'}`}
+                >
+                  VNPay đầy đủ
+                </button>
+              </div>
+              <button
+                onClick={() => setOrderForm(prev => ({ ...prev, paymentMethod: 'VNPAY', paymentMode: 'INSTALLMENT' }))}
+                className={`w-full py-3 rounded-xl text-xs font-bold uppercase tracking-widest border ${orderForm.paymentMode === 'INSTALLMENT' ? 'bg-black text-white border-black' : 'bg-white text-gray-600 border-gray-200'}`}
+              >
+                Trả góp VNPay
+              </button>
+
+              {orderForm.paymentMode === 'INSTALLMENT' && (
+                <select
+                  value={orderForm.packageId ?? ''}
+                  onChange={e => setOrderForm(prev => ({ ...prev, packageId: Number(e.target.value) || undefined }))}
+                  className="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-black"
+                >
+                  <option value="">Chọn gói trả góp</option>
+                  {installmentPackages.map(p => (
+                    <option key={p.packageId} value={p.packageId}>
+                      {p.name} - {p.durationMonths} tháng - {p.interestRate}% lãi
+                    </option>
+                  ))}
+                </select>
+              )}
+            </div>
+
+            <div className="flex gap-3 mt-6">
+              <button
+                onClick={submitOrderFromBuild}
+                disabled={placingOrder}
+                className="flex-1 bg-black text-white py-3 rounded-xl text-sm font-bold hover:bg-gray-800 transition disabled:opacity-50"
+              >
+                {placingOrder ? 'Đang xử lý...' : 'Xác nhận đặt hàng'}
+              </button>
+              <button
+                onClick={() => setShowOrderModal(false)}
                 className="px-6 py-3 border border-gray-200 rounded-xl text-sm font-bold hover:bg-gray-50 transition"
               >
                 Hủy

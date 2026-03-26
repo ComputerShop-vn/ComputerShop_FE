@@ -84,6 +84,8 @@ const OrderList: React.FC = () => {
           {orders.map((order) => {
             const st = statusLabel[order.status] ?? { label: order.status, color: 'bg-gray-100 text-gray-500' };
             const date = order.orderDate || order.createdAt;
+            const isInstallmentOrder =
+              order.paymentType === 'INSTALLMENT' || (order as any).paymentMode === 'INSTALLMENT';
             return (
               <div
                 key={order.orderId}
@@ -100,7 +102,7 @@ const OrderList: React.FC = () => {
                     </p>
                   )}
                   <p className="text-xs text-gray-400">
-                    {order.paymentType === 'INSTALLMENT' ? 'Trả góp' : 'Thanh toán đầy đủ'}
+                    {isInstallmentOrder ? 'Trả góp' : 'Thanh toán đầy đủ'}
                   </p>
                 </div>
                 <div className="flex items-center gap-6">

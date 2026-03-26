@@ -27,3 +27,10 @@ export interface PaymentIpnResponse {
   RspCode: string;
   Message: string;
 }
+
+export interface PaymentResultResponse {
+  orderId: number;
+  amount?: number;
+  status: string;
+  installmentNo?: number | null;
+}

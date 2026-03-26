@@ -77,7 +77,12 @@ const OrderDetail: React.FC = () => {
     if (!order) return;
     setPayingNext(true);
     try {
-      const payment = await paymentService.createPayment(order.orderId);
+      const nextUnpaid = order.payments?.find(p => p.status === 'UNPAID' || p.status === 'OVERDUE');
+      const payment = await paymentService.createPayment(
+        order.orderId,
+        undefined,
+        nextUnpaid?.installmentNo
+      );
       if (!payment.paymentUrl) throw new Error('Không nhận được link thanh toán.');
       paymentService.redirectToPayment(payment.paymentUrl);
     } catch (err: any) {
@@ -107,10 +112,12 @@ const OrderDetail: React.FC = () => {
   const st = statusLabel[order.status] ?? { label: order.status, color: 'bg-gray-100 text-gray-500' };
   const date = order.orderDate || order.createdAt;
   const canCancel = ['PENDING', 'CONFIRMED'].includes(order.status);
+  const isInstallmentOrder =
+    order.paymentType === 'INSTALLMENT' || (order as any).paymentMode === 'INSTALLMENT';
 
   // Find next unpaid installment
   const nextUnpaid = order.payments?.find(p => p.status === 'UNPAID' || p.status === 'OVERDUE');
-  const hasUnpaidInstallment = order.paymentType === 'INSTALLMENT' && !!nextUnpaid;
+  const hasUnpaidInstallment = isInstallmentOrder && !!nextUnpaid;
   const paidCount = order.payments?.filter(p => p.status === 'PAID').length ?? 0;
   const totalCount = order.payments?.length ?? 0;
 
@@ -319,7 +326,7 @@ const OrderDetail: React.FC = () => {
             <div className="space-y-3">
               <div className="flex justify-between text-sm">
                 <span className="text-gray-400">Phương thức</span>
-                <span className="font-bold">{order.paymentType === 'INSTALLMENT' ? 'Trả góp' : 'Đầy đủ'}</span>
+                <span className="font-bold">{isInstallmentOrder ? 'Trả góp' : 'Đầy đủ'}</span>
               </div>
               <div className="flex justify-between items-end pt-3 border-t border-gray-50">
                 <span className="text-xs font-bold uppercase tracking-widest">Tổng tiền</span>

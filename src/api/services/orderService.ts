@@ -4,6 +4,23 @@ import { API_ENDPOINTS } from '../config';
 import { OrderResponse, PlaceOrderRequest, UpdateOrderStatusRequest } from '../types/order';
 import { PagedResponse } from '../types/common';
 
+const normalizeOrder = (order: OrderResponse): OrderResponse => {
+  if (!order) return order;
+  if (order.paymentType) return order;
+
+  // Backend mới có thể trả paymentMode/paymentMethod thay vì paymentType.
+  const mode = (order.paymentMode || '').toUpperCase();
+  const method = (order.paymentMethod || '').toUpperCase();
+
+  if (mode === 'INSTALLMENT') {
+    return { ...order, paymentType: 'INSTALLMENT' };
+  }
+  if (method === 'COD') {
+    return { ...order, paymentType: 'COD' };
+  }
+  return { ...order, paymentType: 'FULL' };
+};
+
 export interface OrderPageParams {
   page?: number;
   size?: number;
@@ -14,13 +31,13 @@ export const orderService = {
   placeOrder: async (data: PlaceOrderRequest): Promise<OrderResponse> => {
     const response = await apiClient.post<OrderResponse>(API_ENDPOINTS.ORDERS, data, true);
     if (!response.result) throw new Error('Failed to place order');
-    return response.result;
+    return normalizeOrder(response.result);
   },
 
   // Get my orders (requires authentication)
   getMyOrders: async (): Promise<OrderResponse[]> => {
     const response = await apiClient.get<OrderResponse[]>(API_ENDPOINTS.ORDERS_ME, true);
-    return response.result || [];
+    return (response.result || []).map(normalizeOrder);
   },
 
   // Get my orders paged
@@ -35,13 +52,13 @@ export const orderService = {
   getOrderById: async (id: number): Promise<OrderResponse> => {
     const response = await apiClient.get<OrderResponse>(API_ENDPOINTS.ORDER_BY_ID(id), true);
     if (!response.result) throw new Error('Order not found');
-    return response.result;
+    return normalizeOrder(response.result);
   },
 
   // Get all orders (requires STAFF/ADMIN)
   getAllOrders: async (): Promise<OrderResponse[]> => {
     const response = await apiClient.get<OrderResponse[]>(API_ENDPOINTS.ORDERS, true);
-    return response.result || [];
+    return (response.result || []).map(normalizeOrder);
   },
 
   // Get all orders paged (requires STAFF/ADMIN)
@@ -56,7 +73,7 @@ export const orderService = {
   updateOrderStatus: async (id: number, data: UpdateOrderStatusRequest): Promise<OrderResponse> => {
     const response = await apiClient.put<OrderResponse>(API_ENDPOINTS.ORDER_UPDATE_STATUS(id), data, true);
     if (!response.result) throw new Error('Failed to update order status');
-    return response.result;
+    return normalizeOrder(response.result);
   },
 
   // Cancel order (requires MEMBER/STAFF/ADMIN)

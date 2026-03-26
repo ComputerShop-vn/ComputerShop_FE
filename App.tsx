@@ -109,6 +109,7 @@ const App: React.FC = () => {
                       <Route path="/payment-callback" element={<PaymentCallback />} />
                       <Route path="/payment-success" element={<PaymentCallback />} />
                       <Route path="/payment-failed" element={<PaymentCallback />} />
+                      <Route path="/payment-result" element={<PaymentCallback />} />
                       <Route path="*" element={<Navigate to="/" />} />
                     </Routes>
                   </main>

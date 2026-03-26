@@ -94,4 +94,5 @@ export interface ProductFilterParams {
   brandId?: number;
   minPrice?: number;
   maxPrice?: number;
+  attributes?: string[];
 }

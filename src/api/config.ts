@@ -108,6 +108,7 @@ export const API_ENDPOINTS = {
   PAYMENT_CREATE: `${API_VERSION}/orders/payment/createPayment`,
   PAYMENT_CALLBACK: `${API_VERSION}/orders/payment/callback`,
   PAYMENT_IPN: `${API_VERSION}/orders/payment/vnp-ipn`,
+  ORDER_PAYMENT_RESULT: (orderId: number) => `${API_VERSION}/orders/${orderId}/payment-result`,
 
   // Auth
   AUTH_LOGIN: `${API_VERSION}/auth/login`,

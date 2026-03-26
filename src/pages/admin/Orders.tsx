@@ -126,7 +126,8 @@ const AdminOrders: React.FC = () => {
             <tbody className="divide-y divide-gray-50">
               {filtered.map((order) => {
                 const st = statusConfig[order.status] ?? { label: order.status, color: 'bg-gray-100 text-gray-600' };
-                const isInstallment = order.paymentType === 'INSTALLMENT';
+                const isInstallment =
+                  order.paymentType === 'INSTALLMENT' || (order as any).paymentMode === 'INSTALLMENT';
 
                 return (
                   <tr key={order.orderId} className="hover:bg-gray-50/50 transition">

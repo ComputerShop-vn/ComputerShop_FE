@@ -7,6 +7,7 @@ import {
   CompatibleVariantsRequest,
   CompatibleVariantsResponse,
 } from '../types/pcbuild';
+import { PlaceOrderRequest, OrderResponse } from '../types/order';
 
 export const pcBuildService = {
   getDraft: async (): Promise<PCBuildResponse> => {
@@ -31,6 +32,11 @@ export const pcBuildService = {
 
   getCompatibleVariants: async (data: CompatibleVariantsRequest): Promise<CompatibleVariantsResponse> => {
     const res = await apiClient.post<CompatibleVariantsResponse>(API_ENDPOINTS.PC_BUILDS_COMPATIBLE, data, true);
+    return res.result!;
+  },
+
+  orderFromDraft: async (data: PlaceOrderRequest): Promise<OrderResponse> => {
+    const res = await apiClient.post<OrderResponse>(API_ENDPOINTS.PC_BUILDS_DRAFT_ORDER, data, true);
     return res.result!;
   },
 };

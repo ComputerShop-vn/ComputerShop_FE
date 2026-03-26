@@ -25,6 +25,9 @@ export const productService = {
     if (filters?.brandId) params.append('brandId', filters.brandId.toString());
     if (filters?.minPrice) params.append('minPrice', filters.minPrice.toString());
     if (filters?.maxPrice) params.append('maxPrice', filters.maxPrice.toString());
+    if (filters?.attributes?.length) {
+      filters.attributes.forEach(a => params.append('attributes', a));
+    }
     const url = params.toString() ? `${API_ENDPOINTS.PRODUCTS}?${params}` : API_ENDPOINTS.PRODUCTS;
     const response = await apiClient.get<ProductResponse[]>(url);
     return response.result || [];
