@@ -20,6 +20,11 @@ export const pcBuildService = {
     return res.result || [];
   },
 
+  getBuildById: async (buildId: number): Promise<PCBuildResponse> => {
+    const res = await apiClient.get<PCBuildResponse>(`${API_ENDPOINTS.PC_BUILDS}/${buildId}`, true);
+    return res.result!;
+  },
+
   upsertItem: async (data: AddBuildItemRequest): Promise<PCBuildResponse> => {
     const res = await apiClient.put<PCBuildResponse>(API_ENDPOINTS.PC_BUILDS_DRAFT_ITEMS, data, true);
     return res.result!;

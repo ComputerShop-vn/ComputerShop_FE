@@ -1,5 +1,5 @@
 import { apiClient } from '../client';
-import { API_ENDPOINTS, API_VERSION } from '../config';
+import { API_ENDPOINTS } from '../config';
 import { GroupBy, RevenueTimeResponse, RevenueProductResponse, RevenueInstallmentResponse } from '../types/report';
 
 export interface RevenueTimeParams {
@@ -45,7 +45,15 @@ export const reportService = {
     if (params.fromDate) q.set('fromDate', params.fromDate);
     if (params.toDate) q.set('toDate', params.toDate);
     if (params.groupBy) q.set('groupBy', params.groupBy);
-    window.open(`${API_VERSION}/reports/revenue/time/export${q.toString() ? '?' + q : ''}`, '_blank');
+    const token = localStorage.getItem('authToken');
+    const url = `${API_ENDPOINTS.REPORTS_REVENUE_TIME_EXPORT}${q.toString() ? '?' + q : ''}`;
+    fetch(url, { headers: { Authorization: `Bearer ${token}` } })
+      .then(r => r.blob()).then(blob => {
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = `doanh-thu-thoi-gian.xlsx`;
+        a.click();
+      });
   },
 
   exportRevenueProduct: (params: RevenueProductParams = {}) => {
@@ -53,10 +61,25 @@ export const reportService = {
     if (params.fromDate) q.set('fromDate', params.fromDate);
     if (params.toDate) q.set('toDate', params.toDate);
     if (params.limit) q.set('limit', String(params.limit));
-    window.open(`${API_VERSION}/reports/revenue/product/export${q.toString() ? '?' + q : ''}`, '_blank');
+    const token = localStorage.getItem('authToken');
+    const url = `${API_ENDPOINTS.REPORTS_REVENUE_PRODUCT_EXPORT}${q.toString() ? '?' + q : ''}`;
+    fetch(url, { headers: { Authorization: `Bearer ${token}` } })
+      .then(r => r.blob()).then(blob => {
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = `doanh-thu-san-pham.xlsx`;
+        a.click();
+      });
   },
 
   exportRevenueInstallment: () => {
-    window.open(`${API_VERSION}/reports/revenue/installment/export`, '_blank');
+    const token = localStorage.getItem('authToken');
+    fetch(API_ENDPOINTS.REPORTS_REVENUE_INSTALLMENT_EXPORT, { headers: { Authorization: `Bearer ${token}` } })
+      .then(r => r.blob()).then(blob => {
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = `doanh-thu-tra-gop.xlsx`;
+        a.click();
+      });
   },
 };

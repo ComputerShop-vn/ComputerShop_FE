@@ -66,13 +66,16 @@ const Reports: React.FC = () => {
   const loadInstall = useCallback(async () => {
     setInstallLoading(true); setInstallError('');
     try { setInstallData(await reportService.getRevenueInstallment()); }
-    catch { setInstallError('Không thể tải báo cáo trả góp.'); }
+    catch (err: any) {
+      console.error('[Reports] installment error:', err);
+      setInstallError(`Không thể tải báo cáo trả góp. (${err?.message || err?.code || 'Lỗi server'})`);
+    }
     finally { setInstallLoading(false); }
   }, []);
 
-  useEffect(() => { if (tab === 'time') loadTime(); }, [tab]);
-  useEffect(() => { if (tab === 'product') loadProduct(); }, [tab]);
-  useEffect(() => { if (tab === 'installment') loadInstall(); }, [tab]);
+  useEffect(() => { if (tab === 'time') loadTime(); }, [tab, loadTime]);
+  useEffect(() => { if (tab === 'product') loadProduct(); }, [tab, loadProduct]);
+  useEffect(() => { if (tab === 'installment') loadInstall(); }, [tab, loadInstall]);
 
   const tabs: { key: Tab; label: string; icon: string }[] = [
     { key: 'time',        label: 'Doanh thu theo thời gian', icon: 'bar_chart' },

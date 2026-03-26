@@ -55,7 +55,8 @@ const PaymentCallback: React.FC = () => {
       (async () => {
         try {
           setStatus('processing');
-          for (let attempt = 1; attempt <= 6; attempt++) {
+          for (let attempt = 1; attempt <= 8; attempt++) {
+            // Dùng payment-result endpoint
             const result = await paymentService.getPaymentResult(orderIdFromPath, installmentNo);
             if (isPaymentSuccess(result.status)) {
               setStatus('success');
@@ -69,12 +70,19 @@ const PaymentCallback: React.FC = () => {
               setTimeout(() => navigate(`/orders/${orderIdFromPath}`, { replace: true }), 3000);
               return;
             }
-            if (attempt < 6) {
-              await new Promise(res => setTimeout(res, 1500));
+            if (attempt < 8) {
+              await new Promise(res => setTimeout(res, 2000));
             }
           }
-          setStatus('failed');
-          setTimeout(() => navigate(`/orders/${orderIdFromPath}`, { replace: true }), 3000);
+          // Sau khi poll hết vẫn không thấy success/failed
+          // Coi như thành công nếu đang ở path success, thất bại nếu không
+          if (isSuccessPath) {
+            setStatus('success');
+            setTimeout(() => navigate(`/orders/${orderIdFromPath}`, { replace: true }), 1500);
+          } else {
+            setStatus('failed');
+            setTimeout(() => navigate(`/orders/${orderIdFromPath}`, { replace: true }), 3000);
+          }
         } catch (err) {
           if (isSuccessPath) {
             setStatus('success');
