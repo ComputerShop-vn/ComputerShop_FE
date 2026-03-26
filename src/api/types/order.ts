@@ -22,7 +22,8 @@ export interface OrderItemResponse {
 }
 
 export interface PaymentScheduleResponse {
-  scheduleId: number;
+  scheduleId?: number;
+  paymentScheduleId?: number; // backend thực tế trả field này
   installmentNo?: number;
   dueDate: string;
   amount: number;

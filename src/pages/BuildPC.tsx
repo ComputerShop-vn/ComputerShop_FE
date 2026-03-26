@@ -75,8 +75,10 @@ const BuildPC: React.FC = () => {
     setLoadingMyBuilds(true);
     try {
       const data = await pcBuildService.getMyBuilds();
+      console.log('[BuildPC] getMyBuilds response:', data);
       setMyBuilds(data);
-    } catch {
+    } catch (err) {
+      console.error('[BuildPC] getMyBuilds error:', err);
       setMyBuilds([]);
     } finally {
       setLoadingMyBuilds(false);

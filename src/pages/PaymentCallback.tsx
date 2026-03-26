@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useNavigate, useSearchParams, useLocation } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
 import { paymentService } from '../api/services/paymentService';
@@ -10,10 +10,14 @@ const PaymentCallback: React.FC = () => {
   const { clearCart } = useCart();
   const [status, setStatus] = useState<'processing' | 'success' | 'failed'>('processing');
   const [orderId, setOrderId] = useState<string | null>(null);
+  const hasRun = useRef(false);
 
   useEffect(() => {
+    if (hasRun.current) return;
+    hasRun.current = true;
     const orderIdQuery = searchParams.get('orderId');
     const installmentNoQuery = searchParams.get('installmentNo');
+    const vnpResponseCode = searchParams.get('vnp_ResponseCode');
 
     const isSuccessPath = location.pathname.includes('payment-success');
     const isFailedPath = location.pathname.includes('payment-failed');
@@ -22,6 +26,10 @@ const PaymentCallback: React.FC = () => {
     const installmentNo =
       installmentNoQuery !== null && installmentNoQuery !== '' ? Number(installmentNoQuery) : undefined;
 
+    // Nếu VNPay trả về responseCode trực tiếp trong URL, dùng luôn không cần poll
+    const vnpSuccess = vnpResponseCode === '00';
+    const vnpFailed = vnpResponseCode !== null && vnpResponseCode !== '00';
+
     const isPaymentSuccess = (s: unknown): boolean => {
       const v = String(s ?? '').trim().toLowerCase();
       return ['success', 'paid', 'completed', 'ok', '00', 'true', '1'].includes(v);
@@ -29,18 +37,36 @@ const PaymentCallback: React.FC = () => {
 
     if (orderIdFromPath) {
       setOrderId(String(orderIdFromPath));
+
+      // Nếu VNPay đã cho biết kết quả qua responseCode, không cần poll
+      if (vnpFailed) {
+        setStatus('failed');
+        setTimeout(() => navigate(`/orders/${orderIdFromPath}`, { replace: true }), 3000);
+        return;
+      }
+
+      if (vnpSuccess) {
+        setStatus('success');
+        setTimeout(() => navigate(`/orders/${orderIdFromPath}`, { replace: true }), 1500);
+        return;
+      }
+
+      // Fallback: poll backend nếu không có responseCode trong URL
       (async () => {
         try {
           setStatus('processing');
-          // BE cập nhật trạng thái qua IPN, có thể trễ so với callback redirect.
           for (let attempt = 1; attempt <= 6; attempt++) {
             const result = await paymentService.getPaymentResult(orderIdFromPath, installmentNo);
             if (isPaymentSuccess(result.status)) {
               setStatus('success');
-              await clearCart().catch(console.error);
               setTimeout(() => {
                 navigate(`/orders/${orderIdFromPath}`, { replace: true });
               }, 1200);
+              return;
+            }
+            if (result.status?.toUpperCase() === 'FAILED') {
+              setStatus('failed');
+              setTimeout(() => navigate(`/orders/${orderIdFromPath}`, { replace: true }), 3000);
               return;
             }
             if (attempt < 6) {
@@ -48,16 +74,14 @@ const PaymentCallback: React.FC = () => {
             }
           }
           setStatus('failed');
-          setTimeout(() => navigate('/cart', { replace: true }), 1200);
+          setTimeout(() => navigate(`/orders/${orderIdFromPath}`, { replace: true }), 3000);
         } catch (err) {
-          // Fallback if payment-result endpoint fails unexpectedly.
           if (isSuccessPath) {
             setStatus('success');
-            clearCart().catch(console.error);
             setTimeout(() => navigate(`/orders/${orderIdFromPath}`, { replace: true }), 1500);
           } else {
             setStatus('failed');
-            setTimeout(() => navigate('/cart', { replace: true }), 1500);
+            setTimeout(() => navigate(`/orders/${orderIdFromPath}`, { replace: true }), 3000);
           }
         }
       })();
@@ -102,8 +126,8 @@ const PaymentCallback: React.FC = () => {
               <span className="material-symbols-outlined text-4xl text-red-500">cancel</span>
             </div>
             <h2 className="text-xl font-light uppercase tracking-widest text-black mb-2">Thanh toán thất bại</h2>
-            <p className="text-gray-400 text-sm mb-6">Giao dịch không thành công. Vui lòng thử lại.</p>
-            <p className="text-xs text-gray-300 uppercase tracking-widest">Đang quay về giỏ hàng...</p>
+            <p className="text-gray-400 text-sm mb-6">Giao dịch không thành công. Đơn hàng vẫn được giữ lại, bạn có thể thanh toán lại sau.</p>
+            <p className="text-xs text-gray-300 uppercase tracking-widest">Đang chuyển đến đơn hàng...</p>
           </>
         )}
       </div>

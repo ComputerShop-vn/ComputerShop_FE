@@ -35,12 +35,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
               role: (userInfo.role?.toLowerCase() as 'admin' | 'staff' | 'user') || 'user',
               name: userInfo.name || userInfo.email.split('@')[0],
             });
+          } else {
+            // getCurrentUser trả null = token invalid, clear luôn
+            localStorage.removeItem('authToken');
+            localStorage.removeItem('refreshToken');
           }
         }
-      } catch (error) {
+      } catch (error: any) {
         console.error('Failed to load user:', error);
-        // Clear invalid tokens
-        await authService.logout();
+        // Chỉ clear token nếu là lỗi 401/403 (token thực sự invalid)
+        // Không clear nếu là lỗi network (500, timeout...)
+        const code = error?.code;
+        if (code === 401 || code === 403 || code === 1006 || code === 1005) {
+          localStorage.removeItem('authToken');
+          localStorage.removeItem('refreshToken');
+        }
+        // Nếu lỗi network, giữ token để user không bị đăng xuất
       } finally {
         setLoading(false);
       }

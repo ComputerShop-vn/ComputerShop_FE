@@ -50,6 +50,7 @@ const OrderDetail: React.FC = () => {
     if (!id) return;
     orderService.getOrderById(Number(id))
       .then(o => {
+        console.log('[OrderDetail] order response:', JSON.stringify(o));
         setOrder(o);
         warrantyService.getByOrderId(o.orderId).then(setWarranties).catch(() => {});
       })
@@ -77,7 +78,7 @@ const OrderDetail: React.FC = () => {
     if (!order) return;
     setPayingNext(true);
     try {
-      const nextUnpaid = order.payments?.find(p => p.status === 'UNPAID' || p.status === 'OVERDUE');
+    const nextUnpaid = order.payments?.find(p => p.status === 'UNPAID' || p.status === 'OVERDUE');
       const payment = await paymentService.createPayment(
         order.orderId,
         undefined,
@@ -113,7 +114,13 @@ const OrderDetail: React.FC = () => {
   const date = order.orderDate || order.createdAt;
   const canCancel = ['PENDING', 'CONFIRMED'].includes(order.status);
   const isInstallmentOrder =
-    order.paymentType === 'INSTALLMENT' || (order as any).paymentMode === 'INSTALLMENT';
+    order.paymentMode === 'INSTALLMENT' || order.paymentType === 'INSTALLMENT';
+
+  // Lấy thông tin giao hàng từ item đầu tiên nếu không có ở root
+  const firstItem = order.items?.[0] as any;
+  const recipientName = order.recipientName || firstItem?.recipientName;
+  const recipientPhone = order.recipientPhone || firstItem?.recipientPhone;
+  const shippingAddress = order.shippingAddress || firstItem?.shippingAddress;
 
   // Find next unpaid installment
   const nextUnpaid = order.payments?.find(p => p.status === 'UNPAID' || p.status === 'OVERDUE');
@@ -173,8 +180,8 @@ const OrderDetail: React.FC = () => {
             </div>
           </div>
 
-          {/* Installment schedule */}
-          {order.payments && order.payments.length > 0 && (
+          {/* Installment schedule - chỉ hiện cho đơn trả góp */}
+          {isInstallmentOrder && order.payments && order.payments.length > 0 && (
             <div className="bg-white border border-gray-100 rounded-2xl p-6">
               <div className="flex items-center justify-between mb-6 pb-2 border-b border-gray-50">
                 <h3 className="text-[10px] font-bold uppercase tracking-[0.2em] text-gray-400">
@@ -187,10 +194,12 @@ const OrderDetail: React.FC = () => {
               <div className="space-y-3">
                 {order.payments.map((p, idx) => {
                   const isPaid = p.status === 'PAID';
-                  const isNext = p.scheduleId === nextUnpaid?.scheduleId;
+                  const pid = p.paymentScheduleId ?? p.scheduleId;
+                  const nextPid = nextUnpaid?.paymentScheduleId ?? nextUnpaid?.scheduleId;
+                  const isNext = pid === nextPid;
                   const isOverdue = p.status === 'OVERDUE';
                   return (
-                    <div key={p.scheduleId} className={`flex items-center justify-between text-sm p-3 rounded-xl ${isNext ? 'bg-amber-50 border border-amber-100' : 'bg-gray-50'}`}>
+                    <div key={p.paymentScheduleId ?? p.scheduleId ?? idx} className={`flex items-center justify-between text-sm p-3 rounded-xl ${isNext ? 'bg-amber-50 border border-amber-100' : 'bg-gray-50'}`}>
                       <div className="flex items-center gap-3">
                         <div className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold flex-shrink-0 ${isPaid ? 'bg-green-500 text-white' : isOverdue ? 'bg-red-400 text-white' : isNext ? 'bg-amber-400 text-white' : 'bg-gray-200 text-gray-500'}`}>
                           {isPaid ? '✓' : idx + 1}
@@ -286,7 +295,7 @@ const OrderDetail: React.FC = () => {
                                 {w.claims.map(c => {
                                   const cs = CLAIM_STATUS[c.status] ?? { label: c.status, color: 'text-gray-500 bg-gray-50' };
                                   return (
-                                    <div key={c.claimId} className="flex flex-wrap items-center gap-2 text-xs bg-gray-50 rounded-lg px-3 py-2">
+                                    <div key={c.claimId ?? `claim-${c.claimDate}`} className="flex flex-wrap items-center gap-2 text-xs bg-gray-50 rounded-lg px-3 py-2">
                                       <span className="text-gray-400">{new Date(c.claimDate).toLocaleDateString('vi-VN')}</span>
                                       <span className="flex-1 min-w-0 text-gray-700 truncate">{c.customerNote || '—'}</span>
                                       {c.technicianNote && <span className="text-blue-500 italic truncate max-w-[140px]">{c.technicianNote}</span>}
@@ -313,10 +322,16 @@ const OrderDetail: React.FC = () => {
           <div className="bg-white border border-gray-100 rounded-2xl p-6">
             <h3 className="text-[10px] font-bold uppercase tracking-[0.2em] text-gray-400 mb-4 pb-2 border-b border-gray-50">Thông tin giao hàng</h3>
             <div className="space-y-2 text-sm">
-              <p className="font-bold text-black">{order.recipientName}</p>
-              <p className="text-gray-500">{order.recipientPhone}</p>
-              <p className="text-gray-500">{order.shippingAddress}</p>
-              {order.notes && <p className="text-gray-400 text-xs italic">{order.notes}</p>}
+              {(recipientName) ? (
+                <>
+                  <p className="font-bold text-black">{recipientName}</p>
+                  <p className="text-gray-500">{recipientPhone}</p>
+                  <p className="text-gray-500">{shippingAddress}</p>
+                  {order.notes && <p className="text-gray-400 text-xs italic">{order.notes}</p>}
+                </>
+              ) : (
+                <p className="text-gray-300 italic text-xs">Không có thông tin giao hàng</p>
+              )}
             </div>
           </div>
 
@@ -326,7 +341,25 @@ const OrderDetail: React.FC = () => {
             <div className="space-y-3">
               <div className="flex justify-between text-sm">
                 <span className="text-gray-400">Phương thức</span>
+                <span className="font-bold">
+                  {order.paymentMethod === 'COD' ? 'Tiền mặt (COD)' : 'VNPay'}
+                </span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-gray-400">Hình thức</span>
                 <span className="font-bold">{isInstallmentOrder ? 'Trả góp' : 'Đầy đủ'}</span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-gray-400">Thanh toán</span>
+                {(() => {
+                  const paid = order.payments?.every(p => p.status === 'PAID');
+                  const hasPaid = order.payments?.some(p => p.status === 'PAID');
+                  return paid
+                    ? <span className="font-bold text-green-600">Đã thanh toán</span>
+                    : hasPaid
+                    ? <span className="font-bold text-amber-600">Thanh toán một phần</span>
+                    : <span className="font-bold text-red-500">Chưa thanh toán</span>;
+                })()}
               </div>
               <div className="flex justify-between items-end pt-3 border-t border-gray-50">
                 <span className="text-xs font-bold uppercase tracking-widest">Tổng tiền</span>

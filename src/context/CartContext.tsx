@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Product, CartItem } from '../types/index';
 import { useAuth } from './AuthContext';
@@ -223,7 +223,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const clearCart = async () => {
+  const clearCart = useCallback(async () => {
     if (!isAuthenticated) {
       setCart([]);
       return;
@@ -231,7 +231,6 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     try {
       setLoading(true);
-      // Delete each cart item individually since backend doesn't support DELETE /cart
       const deletePromises = cart.map(item => 
         item.cartItemId ? cartService.removeCartItem(item.cartItemId) : Promise.resolve()
       );
@@ -239,12 +238,11 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setCart([]);
     } catch (error: any) {
       console.error('Failed to clear cart:', error);
-      // Don't show alert, just log error and clear local state
       setCart([]);
     } finally {
       setLoading(false);
     }
-  };
+  }, [isAuthenticated, cart]);
 
   const totalItems = cart.length; // Số lượng sản phẩm khác nhau
   const totalPrice = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);

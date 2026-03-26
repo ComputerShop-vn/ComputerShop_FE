@@ -20,8 +20,14 @@ export const paymentService = {
       true
     );
     
+    console.log('[paymentService] createPayment raw response:', JSON.stringify(response));
+    
     if (!response.result) {
       throw new Error('Failed to create payment');
+    }
+    // Backend có thể trả về result là string URL hoặc object { paymentUrl }
+    if (typeof response.result === 'string') {
+      return { paymentUrl: response.result as string };
     }
     return response.result;
   },

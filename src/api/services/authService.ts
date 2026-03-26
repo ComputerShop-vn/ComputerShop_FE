@@ -113,44 +113,56 @@ export const authService = {
     return response.result;
   },
 
-  // Get current user info from token
+  // Get current user info from token — decode JWT locally, không cần introspect
   getCurrentUser: async (): Promise<UserInfo | null> => {
     try {
-      console.log('getCurrentUser - calling introspect...');
-      const introspectResult = await authService.introspect();
-      console.log('getCurrentUser - introspect result:', introspectResult);
-      
-      if (introspectResult.valid) {
-        const token = localStorage.getItem('authToken');
-        if (token) {
-          try {
-            const payload = JSON.parse(atob(token.split('.')[1]));
-            console.log('getCurrentUser - full decoded payload:', JSON.stringify(payload));
-            
-            // Backend có thể dùng nhiều field khác nhau cho role
-            const rawRole = payload.scope || payload.role || payload.roles || 
-                           payload.authorities || payload.roleName || '';
-            
-            // Xử lý nếu role là array
-            const roleStr = Array.isArray(rawRole) ? rawRole[0] : rawRole;
-            
-            // Bỏ prefix ROLE_ nếu có
-            const cleanRole = roleStr.replace('ROLE_', '').toUpperCase();
-            
-            console.log('getCurrentUser - extracted role:', cleanRole);
-            
-            return {
-              email: payload.sub || payload.email || '',
-              role: cleanRole || 'MEMBER',
-              name: payload.name || payload.username || '',
-            };
-          } catch (decodeError) {
-            console.error('Failed to decode token:', decodeError);
-          }
-        }
+      const token = localStorage.getItem('authToken');
+      if (!token) return null;
+
+      // Decode JWT payload locally trước
+      let payload: any;
+      try {
+        payload = JSON.parse(atob(token.split('.')[1]));
+      } catch {
+        return null;
       }
-      
-      return null;
+
+      // Kiểm tra token hết hạn locally
+      const now = Math.floor(Date.now() / 1000);
+      if (payload.exp && payload.exp < now) {
+        console.log('getCurrentUser - token expired locally');
+        return null;
+      }
+
+      // Introspect để verify với server
+      console.log('getCurrentUser - calling introspect...');
+      try {
+        const introspectResult = await authService.introspect();
+        console.log('getCurrentUser - introspect result:', introspectResult);
+        if (!introspectResult.valid) return null;
+      } catch (introspectError: any) {
+        // Nếu lỗi network (500, timeout), dùng local decode thay vì logout
+        const code = introspectError?.code;
+        if (code === 401 || code === 403 || code === 1006 || code === 1005) {
+          return null; // Token thực sự invalid
+        }
+        // Lỗi network — tin tưởng local decode
+        console.warn('getCurrentUser - introspect network error, using local decode');
+      }
+
+      console.log('getCurrentUser - full decoded payload:', JSON.stringify(payload));
+
+      const rawRole = payload.scope || payload.role || payload.roles ||
+                     payload.authorities || payload.roleName || '';
+      const roleStr = Array.isArray(rawRole) ? rawRole[0] : rawRole;
+      const cleanRole = roleStr.replace('ROLE_', '').toUpperCase();
+      console.log('getCurrentUser - extracted role:', cleanRole);
+
+      return {
+        email: payload.sub || payload.email || '',
+        role: cleanRole || 'MEMBER',
+        name: payload.name || payload.username || '',
+      };
     } catch (error) {
       console.error('Get current user error:', error);
       return null;
