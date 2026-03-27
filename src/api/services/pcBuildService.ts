@@ -30,6 +30,11 @@ export const pcBuildService = {
     return res.result!;
   },
 
+  removeItem: async (buildItemId: number): Promise<PCBuildResponse> => {
+    const res = await apiClient.delete<PCBuildResponse>(API_ENDPOINTS.PC_BUILDS_DRAFT_ITEM(buildItemId), true);
+    return res.result!;
+  },
+
   saveBuild: async (data: SaveBuildNameRequest): Promise<PCBuildResponse> => {
     const res = await apiClient.put<PCBuildResponse>(API_ENDPOINTS.PC_BUILDS_DRAFT_SAVE, data, true);
     return res.result!;
