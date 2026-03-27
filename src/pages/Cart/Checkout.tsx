@@ -100,7 +100,7 @@ const Checkout: React.FC = () => {
       // If payment method is full (VNPay) OR installment, redirect to VNPay
       if (paymentMethod === 'full' || paymentMethod === 'installment') {
         try {
-          const payment = await paymentService.createPayment(order.orderId);
+          const payment = await paymentService.createPayment(order.orderId, undefined, 0);
           if (!payment.paymentUrl) throw new Error('Không nhận được link thanh toán từ server.');
           await clearCart(); // Clear cart trước khi redirect
           paymentService.redirectToPayment(payment.paymentUrl);
