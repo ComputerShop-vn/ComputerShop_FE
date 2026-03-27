@@ -117,7 +117,7 @@ const Shop: React.FC = () => {
   const activeCategoryName = categoryFilter ? findCategoryName(categories, parseInt(categoryFilter)) || categoryFilter : null;
 
   return (
-    <div className="bg-gray-50 min-h-screen font-['Jost']">
+    <div className="min-h-screen" style={{ background: '#F8FAFC' }}>
       <div className="max-w-7xl mx-auto px-4 py-12">
         <div className="flex flex-col lg:flex-row gap-10">
 
@@ -125,11 +125,14 @@ const Shop: React.FC = () => {
           <aside className="w-full lg:w-60 flex-shrink-0">
             <div className="sticky top-32 space-y-6">
               <div>
-                <h3 className="text-[10px] font-black uppercase tracking-[0.2em] mb-4 pb-2 border-b border-gray-200 text-gray-400">Danh mục</h3>
+                <h3 className="text-[10px] font-black uppercase tracking-[0.2em] mb-4 pb-2" style={{ color: '#002B5B', borderBottom: '2px solid #00D4FF' }}>Danh mục</h3>
                 <div className="flex flex-col gap-1">
                   <button
                     onClick={() => handleCategoryChange(null)}
-                    className={`px-3 py-2 text-sm font-medium rounded-lg transition-all text-left flex items-center justify-between ${!categoryFilter ? 'bg-black text-white' : 'text-gray-600 hover:bg-gray-100'}`}
+                    className="px-3 py-2 text-sm font-medium rounded-lg transition-all text-left flex items-center justify-between"
+                    style={!categoryFilter ? { background: 'rgba(0,43,91,0.1)', color: '#002B5B', border: '1px solid rgba(0,43,91,0.3)' } : { color: '#64748B' }}
+                    onMouseEnter={e => { if (categoryFilter) (e.currentTarget as HTMLElement).style.background = 'rgba(0,43,91,0.05)'; }}
+                    onMouseLeave={e => { if (categoryFilter) (e.currentTarget as HTMLElement).style.background = 'transparent'; }}
                   >
                     Tất cả
                     {!categoryFilter && <span className="material-symbols-outlined text-sm">chevron_right</span>}
@@ -144,25 +147,31 @@ const Shop: React.FC = () => {
                         <div className="flex items-center gap-1">
                           <button
                             onClick={() => handleCategoryChange(parent.categoryId)}
-                            className={`flex-1 px-3 py-2 text-sm font-medium rounded-lg transition-all text-left ${isActive ? 'bg-black text-white' : 'text-gray-600 hover:bg-gray-100'}`}
+                            className="flex-1 px-3 py-2 text-sm font-medium rounded-lg transition-all text-left"
+                            style={isActive ? { background: 'rgba(0,43,91,0.1)', color: '#002B5B' } : { color: '#64748B' }}
+                            onMouseEnter={e => { if (!isActive) (e.currentTarget as HTMLElement).style.background = 'rgba(0,43,91,0.05)'; }}
+                            onMouseLeave={e => { if (!isActive) (e.currentTarget as HTMLElement).style.background = 'transparent'; }}
                           >
                             {parent.categoryName}
                           </button>
                           {hasChildren && (
-                            <button onClick={() => toggleExpand(parent.categoryId)} className="p-1.5 rounded-lg transition text-gray-400 hover:text-black">
+                            <button onClick={() => toggleExpand(parent.categoryId)} className="p-1.5 rounded-lg transition" style={{ color: '#64748B' }}>
                               <span className={`material-symbols-outlined text-sm transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`}>expand_more</span>
                             </button>
                           )}
                         </div>
                         {hasChildren && isExpanded && (
-                          <div className="ml-4 mt-1 flex flex-col gap-1 pl-3 border-l border-gray-200">
+                          <div className="ml-4 mt-1 flex flex-col gap-1 pl-3 border-l" style={{ borderColor: 'rgba(0,43,91,0.15)' }}>
                             {parent.children!.map((child) => {
                               const isChildActive = categoryFilter === String(child.categoryId);
                               return (
                                 <button
                                   key={child.categoryId}
                                   onClick={() => handleCategoryChange(child.categoryId)}
-                                  className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-all text-left ${isChildActive ? 'bg-black text-white' : 'text-gray-500 hover:bg-gray-100'}`}
+                                  className="px-3 py-1.5 text-xs font-medium rounded-lg transition-all text-left"
+                                  style={isChildActive ? { background: 'rgba(0,43,91,0.1)', color: '#002B5B' } : { color: '#64748B' }}
+                                  onMouseEnter={e => { if (!isChildActive) (e.currentTarget as HTMLElement).style.background = 'rgba(0,43,91,0.05)'; }}
+                                  onMouseLeave={e => { if (!isChildActive) (e.currentTarget as HTMLElement).style.background = 'transparent'; }}
                                 >
                                   {child.categoryName}
                                 </button>
@@ -176,10 +185,13 @@ const Shop: React.FC = () => {
                 </div>
               </div>
 
-              <div className="hidden lg:block p-5 rounded-2xl border border-gray-100 bg-white">
-                <h4 className="text-xs font-bold uppercase tracking-widest mb-2 text-gray-800">Hỗ trợ 24/7</h4>
-                <p className="text-xs leading-relaxed text-gray-500">Cần tư vấn cấu hình? Liên hệ ngay với đội ngũ chuyên gia.</p>
-                <button className="mt-4 w-full py-2.5 rounded-xl text-[10px] font-bold uppercase tracking-widest transition border border-gray-200 text-gray-500 hover:border-black hover:text-black">
+              <div className="hidden lg:block p-5 rounded-2xl" style={{ background: '#ffffff', border: '1px solid #e2e8f0' }}>
+                <h4 className="text-xs font-bold uppercase tracking-widest mb-2" style={{ color: '#002B5B' }}>Hỗ trợ 24/7</h4>
+                <p className="text-xs leading-relaxed" style={{ color: '#64748B' }}>Cần tư vấn cấu hình? Liên hệ ngay với đội ngũ chuyên gia.</p>
+                <button className="mt-4 w-full py-2.5 rounded-xl text-[10px] font-bold uppercase tracking-widest transition" style={{ border: '1px solid #002B5B', color: '#002B5B' }}
+                  onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = '#002B5B'; (e.currentTarget as HTMLElement).style.color = '#fff'; }}
+                  onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent'; (e.currentTarget as HTMLElement).style.color = '#002B5B'; }}
+                >
                   Liên hệ ngay
                 </button>
               </div>
@@ -189,28 +201,31 @@ const Shop: React.FC = () => {
           {/* Main */}
           <div className="flex-1">
             <div className="mb-6">
-              <h1 className="text-3xl font-light uppercase tracking-tight text-gray-900">
-                {activeCategoryName ? (<>Danh mục: <span className="font-bold">{activeCategoryName}</span></>) :
-                  searchFilter ? (<>Kết quả: <span className="font-bold">"{searchFilter}"</span></>) :
-                  (<>Tất cả <span className="font-bold">Sản phẩm</span></>)}
+              <h1 className="text-3xl font-light uppercase tracking-tight" style={{ color: '#f1f5f9' }}>
+                {activeCategoryName ? (<>Danh mục: <span className="font-bold" style={{ color: '#60a5fa' }}>{activeCategoryName}</span></>) :
+                  searchFilter ? (<>Kết quả: <span className="font-bold" style={{ color: '#60a5fa' }}>"{searchFilter}"</span></>) :
+                  (<>Tất cả <span className="font-bold" style={{ color: '#60a5fa' }}>Sản phẩm</span></>)}
               </h1>
-              <p className="mt-1 text-[10px] font-bold uppercase tracking-[0.2em] text-gray-400">
+              <p className="mt-1 text-[10px] font-bold uppercase tracking-[0.2em]" style={{ color: '#475569' }}>
                 Hiển thị {pagedData?.totalElements ?? products.length} sản phẩm
               </p>
             </div>
 
             {/* Filter bar */}
-            <div className="flex flex-wrap items-center gap-2 mb-8 pb-6 border-b border-gray-200">
+            <div className="flex flex-wrap items-center gap-2 mb-8 pb-6" style={{ borderBottom: '1px solid rgba(59,130,246,0.15)' }}>
               {/* Price filter */}
               <div className="relative">
                 <button
                   onClick={() => setOpenDropdown(openDropdown === 'price' ? null : 'price')}
-                  className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all border ${selectedPriceRange ? 'bg-black text-white border-black' : 'bg-white border-gray-200 text-gray-600 hover:border-gray-400'}`}
+                  className="flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all"
+                  style={selectedPriceRange
+                    ? { background: '#002B5B', color: '#fff', border: '1px solid #002B5B' }
+                    : { background: '#fff', color: '#64748B', border: '1px solid #e2e8f0' }}
                 >
                   <span className="material-symbols-outlined text-base">payments</span>
                   {selectedPriceRange ? selectedPriceRange.label : 'Lọc theo giá'}
                   {selectedPriceRange ? (
-                    <span role="button" onClick={(e) => { e.stopPropagation(); setSelectedPriceRange(null); setOpenDropdown(null); }} className="ml-1 cursor-pointer">
+                    <span role="button" onClick={(e: React.MouseEvent) => { e.stopPropagation(); setSelectedPriceRange(null); setOpenDropdown(null); }} className="ml-1 cursor-pointer">
                       <span className="material-symbols-outlined text-sm">close</span>
                     </span>
                   ) : (
@@ -218,10 +233,13 @@ const Shop: React.FC = () => {
                   )}
                 </button>
                 {openDropdown === 'price' && (
-                  <div className="absolute top-full left-0 mt-2 w-48 rounded-2xl shadow-2xl border border-gray-100 py-2 z-30 bg-white">
+                  <div className="absolute top-full left-0 mt-2 w-48 rounded-2xl shadow-2xl py-2 z-30 bg-white" style={{ border: '1px solid #e2e8f0' }}>
                     {PRICE_RANGES.map((range) => (
                       <button key={range.label} onClick={() => { setSelectedPriceRange(range); setOpenDropdown(null); }}
-                        className={`w-full text-left px-4 py-2.5 text-sm transition flex items-center justify-between hover:bg-gray-50 ${selectedPriceRange?.label === range.label ? 'text-black font-bold' : 'text-gray-600'}`}
+                        className="w-full text-left px-4 py-2.5 text-sm transition flex items-center justify-between"
+                        style={selectedPriceRange?.label === range.label ? { color: '#002B5B', fontWeight: 700 } : { color: '#64748B' }}
+                        onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = '#F8FAFC'; }}
+                        onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent'; }}
                       >
                         {range.label}
                         {selectedPriceRange?.label === range.label && <span className="material-symbols-outlined text-sm">check</span>}
@@ -234,12 +252,15 @@ const Shop: React.FC = () => {
               {/* Discount toggle */}
               <button
                 onClick={() => setFilterDiscount(!filterDiscount)}
-                className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all border ${filterDiscount ? 'bg-red-500 text-white border-red-500' : 'bg-white border-gray-200 text-gray-600 hover:border-gray-400'}`}
+                className="flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all"
+                style={filterDiscount
+                  ? { background: '#ef4444', color: '#fff', border: '1px solid #ef4444' }
+                  : { background: '#fff', color: '#64748B', border: '1px solid #e2e8f0' }}
               >
                 <span className="material-symbols-outlined text-base">local_offer</span>
                 Đang giảm giá
                 {filterDiscount && (
-                  <span role="button" onClick={(e) => { e.stopPropagation(); setFilterDiscount(false); }} className="ml-1 cursor-pointer">
+                  <span role="button" onClick={(e: React.MouseEvent) => { e.stopPropagation(); setFilterDiscount(false); }} className="ml-1 cursor-pointer">
                     <span className="material-symbols-outlined text-sm">close</span>
                   </span>
                 )}
@@ -249,12 +270,15 @@ const Shop: React.FC = () => {
               <div className="relative">
                 <button
                   onClick={() => setOpenDropdown(openDropdown === 'sort' ? null : 'sort')}
-                  className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all border ${sortOrder !== 'none' ? 'bg-black text-white border-black' : 'bg-white border-gray-200 text-gray-600 hover:border-gray-400'}`}
+                  className="flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all"
+                  style={sortOrder !== 'none'
+                    ? { background: '#002B5B', color: '#fff', border: '1px solid #002B5B' }
+                    : { background: '#fff', color: '#64748B', border: '1px solid #e2e8f0' }}
                 >
                   <span className="material-symbols-outlined text-base">{sortOrder === 'asc' ? 'arrow_upward' : sortOrder === 'desc' ? 'arrow_downward' : 'sort'}</span>
                   {sortOrder === 'asc' ? 'Giá thấp → cao' : sortOrder === 'desc' ? 'Giá cao → thấp' : 'Sắp xếp'}
                   {sortOrder !== 'none' ? (
-                    <span role="button" onClick={(e) => { e.stopPropagation(); setSortOrder('none'); setOpenDropdown(null); }} className="ml-1 cursor-pointer">
+                    <span role="button" onClick={(e: React.MouseEvent) => { e.stopPropagation(); setSortOrder('none'); setOpenDropdown(null); }} className="ml-1 cursor-pointer">
                       <span className="material-symbols-outlined text-sm">close</span>
                     </span>
                   ) : (
@@ -262,10 +286,13 @@ const Shop: React.FC = () => {
                   )}
                 </button>
                 {openDropdown === 'sort' && (
-                  <div className="absolute top-full left-0 mt-2 w-48 rounded-2xl shadow-2xl border border-gray-100 py-2 z-30 bg-white">
+                  <div className="absolute top-full left-0 mt-2 w-48 rounded-2xl shadow-2xl py-2 z-30 bg-white" style={{ border: '1px solid #e2e8f0' }}>
                     {[{ value: 'asc' as const, label: 'Giá thấp → cao', icon: 'arrow_upward' }, { value: 'desc' as const, label: 'Giá cao → thấp', icon: 'arrow_downward' }].map((opt) => (
                       <button key={opt.value} onClick={() => { setSortOrder(opt.value); setOpenDropdown(null); }}
-                        className={`w-full text-left px-4 py-2.5 text-sm transition flex items-center gap-2 hover:bg-gray-50 ${sortOrder === opt.value ? 'text-black font-bold' : 'text-gray-600'}`}
+                        className="w-full text-left px-4 py-2.5 text-sm transition flex items-center gap-2"
+                        style={sortOrder === opt.value ? { color: '#002B5B', fontWeight: 700 } : { color: '#64748B' }}
+                        onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = '#F8FAFC'; }}
+                        onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent'; }}
                       >
                         <span className="material-symbols-outlined text-sm">{opt.icon}</span>
                         {opt.label}
@@ -278,7 +305,10 @@ const Shop: React.FC = () => {
               {(selectedPriceRange || filterDiscount || sortOrder !== 'none') && (
                 <button
                   onClick={() => { setSelectedPriceRange(null); setFilterDiscount(false); setSortOrder('none'); setOpenDropdown(null); }}
-                  className="flex items-center gap-1.5 px-4 py-2 rounded-full border border-dashed border-gray-300 text-sm text-gray-400 transition hover:border-black hover:text-black"
+                  className="flex items-center gap-1.5 px-4 py-2 rounded-full text-sm transition"
+                  style={{ border: '1px dashed #cbd5e1', color: '#64748B' }}
+                  onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = '#002B5B'; (e.currentTarget as HTMLElement).style.borderColor = '#002B5B'; }}
+                  onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = '#64748B'; (e.currentTarget as HTMLElement).style.borderColor = '#cbd5e1'; }}
                 >
                   <span className="material-symbols-outlined text-base">filter_alt_off</span>
                   Xóa bộ lọc
@@ -290,12 +320,12 @@ const Shop: React.FC = () => {
 
             {loading && (
               <div className="flex items-center justify-center py-20">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-black"></div>
+                <div className="animate-spin rounded-full h-12 w-12" style={{ border: '3px solid #e2e8f0', borderTopColor: '#002B5B' }}></div>
               </div>
             )}
 
             {error && (
-              <div className="px-4 py-3 rounded-lg mb-6 border border-red-200 bg-red-50 text-red-600">
+              <div className="px-4 py-3 rounded-lg mb-6" style={{ border: '1px solid #fecaca', background: '#fef2f2', color: '#dc2626' }}>
                 <p className="text-sm font-medium">{error}</p>
               </div>
             )}
@@ -314,13 +344,16 @@ const Shop: React.FC = () => {
                     )}
                   </>
                 ) : (
-                  <div className="py-32 text-center rounded-3xl border border-dashed border-gray-200 bg-white">
-                    <span className="material-symbols-outlined text-6xl mb-4 block text-gray-200">inventory_2</span>
-                    <h2 className="text-xl font-bold uppercase tracking-widest text-gray-400">Không tìm thấy sản phẩm nào</h2>
-                    <p className="mt-2 text-sm text-gray-400">Vui lòng thử lại với bộ lọc khác</p>
+                  <div className="py-32 text-center rounded-3xl bg-white" style={{ border: '1px dashed #cbd5e1' }}>
+                    <span className="material-symbols-outlined text-6xl mb-4 block" style={{ color: '#e2e8f0' }}>inventory_2</span>
+                    <h2 className="text-xl font-bold uppercase tracking-widest" style={{ color: '#64748B' }}>Không tìm thấy sản phẩm nào</h2>
+                    <p className="mt-2 text-sm" style={{ color: '#94a3b8' }}>Vui lòng thử lại với bộ lọc khác</p>
                     <button
                       onClick={() => { navigate('/shop'); setSelectedPriceRange(null); setFilterDiscount(false); setSortOrder('none'); }}
-                      className="mt-6 px-8 py-3 text-[11px] font-bold uppercase tracking-widest rounded-xl transition text-white bg-black hover:bg-gray-800"
+                      className="mt-6 px-8 py-3 text-[11px] font-bold uppercase tracking-widest rounded-xl transition text-white"
+                      style={{ background: '#002B5B' }}
+                      onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = '#003d7a'; }}
+                      onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = '#002B5B'; }}
                     >
                       Xem tất cả sản phẩm
                     </button>

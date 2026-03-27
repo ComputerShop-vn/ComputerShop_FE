@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { PRODUCTS } from '../../constants/index';
@@ -20,13 +19,17 @@ const Header: React.FC<HeaderProps> = ({ cartCount }) => {
   const { user, logout, isAuthenticated } = useAuth();
   const [showUserMenu, setShowUserMenu] = useState(false);
   const userMenuRef = useRef<HTMLDivElement>(null);
+  const [showCategories, setShowCategories] = useState(false);
+  const [activeCategoryId, setActiveCategoryId] = useState<number | null>(null);
+  const [categoryTree, setCategoryTree] = useState<CategoryTreeNode[]>([]);
+  const categoryRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (searchQuery.trim().length > 0) {
-      const filtered = PRODUCTS.filter(product =>
-        product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        product.brand.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        product.category.toLowerCase().includes(searchQuery.toLowerCase())
+      const filtered = PRODUCTS.filter(p =>
+        p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        p.brand.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        p.category.toLowerCase().includes(searchQuery.toLowerCase())
       ).slice(0, 5);
       setSuggestions(filtered);
       setShowSuggestions(true);
@@ -37,10 +40,20 @@ const Header: React.FC<HeaderProps> = ({ cartCount }) => {
   }, [searchQuery]);
 
   useEffect(() => {
+    categoryService.getCategoryTree().then(tree => setCategoryTree(tree)).catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    if (showCategories && categoryTree.length > 0 && activeCategoryId === null) {
+      setActiveCategoryId(categoryTree[0].categoryId);
+    }
+  }, [showCategories, categoryTree]);
+
+  useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (searchRef.current && !searchRef.current.contains(event.target as Node)) {
-        setShowSuggestions(false);
-      }
+      if (searchRef.current && !searchRef.current.contains(event.target as Node)) setShowSuggestions(false);
+      if (categoryRef.current && !categoryRef.current.contains(event.target as Node)) setShowCategories(false);
+      if (userMenuRef.current && !userMenuRef.current.contains(event.target as Node)) setShowUserMenu(false);
     };
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
@@ -60,41 +73,6 @@ const Header: React.FC<HeaderProps> = ({ cartCount }) => {
     }
   };
 
-  const [showCategories, setShowCategories] = useState(false);
-  const [activeCategoryId, setActiveCategoryId] = useState<number | null>(null);
-  const [categoryTree, setCategoryTree] = useState<CategoryTreeNode[]>([]);
-  const categoryRef = useRef<HTMLDivElement>(null);
-
-  // Load category tree once
-  useEffect(() => {
-    categoryService.getCategoryTree().then(tree => {
-      setCategoryTree(tree);
-    }).catch(() => {});
-  }, []);
-
-  // Set first category active when menu opens
-  useEffect(() => {
-    if (showCategories && categoryTree.length > 0 && activeCategoryId === null) {
-      setActiveCategoryId(categoryTree[0].categoryId);
-    }
-  }, [showCategories, categoryTree]);
-
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (searchRef.current && !searchRef.current.contains(event.target as Node)) {
-        setShowSuggestions(false);
-      }
-      if (categoryRef.current && !categoryRef.current.contains(event.target as Node)) {
-        setShowCategories(false);
-      }
-      if (userMenuRef.current && !userMenuRef.current.contains(event.target as Node)) {
-        setShowUserMenu(false);
-      }
-    };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
-
   const handleCategoryClick = (categoryId: number) => {
     navigate(`/shop?category=${categoryId}`);
     setShowCategories(false);
@@ -110,80 +88,84 @@ const Header: React.FC<HeaderProps> = ({ cartCount }) => {
   const activeCategoryData = categoryTree.find(c => c.categoryId === activeCategoryId);
 
   return (
-    <header className="bg-white border-b border-gray-100 sticky top-0 z-50 font-['Jost']">
+    <header className="sticky top-0 z-50" style={{ background: '#002B5B', backdropFilter: 'blur(20px)', borderBottom: '1px solid rgba(0,212,255,0.2)' }}>
       <div className="max-w-7xl mx-auto px-4 h-16 md:h-20 flex items-center gap-3 md:gap-6">
-        
+
         {/* Logo */}
-        <Link to="/" className="flex-shrink-0 flex items-center">
-          <span className="text-xl md:text-2xl font-black tracking-tighter uppercase text-black">
-            VITINH<span className="text-gray-400">.COM</span>
+        <Link to="/" className="flex-shrink-0 flex items-center gap-2">
+          <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: '#00D4FF' }}>
+            <span className="material-symbols-outlined text-base" style={{ color: '#002B5B' }}>memory</span>
+          </div>
+          <span className="text-xl md:text-2xl font-black tracking-tighter uppercase" style={{ color: '#F8FAFC' }}>
+            VITINH<span style={{ color: '#00D4FF' }}>.COM</span>
           </span>
         </Link>
 
-        {/* Categories Button */}
+        {/* Categories */}
         <div className="relative" ref={categoryRef}>
-          <button 
+          <button
             onClick={() => { setShowCategories(!showCategories); if (showCategories) setActiveCategoryId(null); }}
-            className={`hidden lg:flex items-center gap-2 px-3 py-2 rounded-lg transition whitespace-nowrap border ${showCategories ? 'bg-black text-white border-black' : 'bg-gray-50 border-gray-100 hover:bg-gray-100'}`}
+            className="hidden lg:flex items-center gap-2 px-3 py-2 rounded-lg transition text-sm font-bold uppercase tracking-wider"
+            style={showCategories
+              ? { background: 'rgba(0,212,255,0.2)', color: '#00D4FF', border: '1px solid rgba(0,212,255,0.5)' }
+              : { background: 'rgba(255,255,255,0.08)', color: '#94a3b8', border: '1px solid rgba(255,255,255,0.12)' }}
           >
             <span className="material-symbols-outlined text-xl">{showCategories ? 'close' : 'grid_view'}</span>
-            <span className="text-xs font-bold uppercase tracking-wider">Danh mục</span>
+            <span className="text-xs">Danh mục</span>
             <span className={`material-symbols-outlined text-sm transition-transform duration-300 ${showCategories ? 'rotate-180' : ''}`}>expand_more</span>
           </button>
 
-          {/* Categories Dropdown */}
           {showCategories && (
-            <div className="absolute top-full left-0 mt-2 w-[650px] bg-white border border-gray-100 rounded-2xl shadow-2xl overflow-hidden z-[70] flex animate-in fade-in slide-in-from-top-2 duration-200">
-              {/* Left Sidebar */}
-              <div className="w-[240px] bg-gray-50 border-r border-gray-100 p-2">
+            <div className="absolute top-full left-0 mt-2 w-[650px] rounded-2xl shadow-2xl overflow-hidden z-[70] flex animate-in fade-in slide-in-from-top-2 duration-200" style={{ background: '#001a3d', border: '1px solid rgba(0,212,255,0.2)' }}>
+              <div className="w-[240px] border-r p-2" style={{ background: 'rgba(255,255,255,0.03)', borderColor: 'rgba(0,212,255,0.15)' }}>
                 {categoryTree.map((cat) => (
                   <button
                     key={cat.categoryId}
                     onMouseEnter={() => setActiveCategoryId(cat.categoryId)}
                     onClick={() => handleCategoryClick(cat.categoryId)}
-                    className={`w-full flex items-center justify-between p-3 rounded-xl transition group text-left ${activeCategoryId === cat.categoryId ? 'bg-white shadow-sm ring-1 ring-black/5' : 'hover:bg-white/50'}`}
+                    className="w-full flex items-center justify-between p-3 rounded-xl transition text-left"
+                    style={activeCategoryId === cat.categoryId
+                      ? { background: 'rgba(0,212,255,0.15)', color: '#00D4FF' }
+                      : { color: '#94a3b8' }}
                   >
                     <div className="flex items-center gap-3">
-                      <span className={`material-symbols-outlined transition ${activeCategoryId === cat.categoryId ? 'text-black' : 'text-gray-400 group-hover:text-black'}`}>category</span>
-                      <span className={`text-sm font-medium transition ${activeCategoryId === cat.categoryId ? 'text-black' : 'text-gray-600 group-hover:text-black'}`}>{cat.categoryName}</span>
+                      <span className="material-symbols-outlined text-base">category</span>
+                      <span className="text-sm font-medium">{cat.categoryName}</span>
                     </div>
                     {cat.children && cat.children.length > 0 && (
-                      <span className={`material-symbols-outlined text-sm transition ${activeCategoryId === cat.categoryId ? 'text-black translate-x-0.5' : 'text-gray-300 group-hover:text-black'}`}>chevron_right</span>
+                      <span className="material-symbols-outlined text-sm">chevron_right</span>
                     )}
                   </button>
                 ))}
               </div>
-
-              {/* Right Content (Children) */}
-              <div className="flex-1 p-8 bg-white">
+              <div className="flex-1 p-8">
                 {activeCategoryData && (
-                  <div className="animate-in fade-in slide-in-from-left-2 duration-300">
-                    <div className="flex items-center gap-3 mb-6">
-                      <span className="material-symbols-outlined text-black bg-gray-100 p-2 rounded-lg">category</span>
-                      <h3 className="text-lg font-bold text-black uppercase tracking-tight">{activeCategoryData.categoryName}</h3>
-                    </div>
-
+                  <div className="animate-in fade-in duration-200">
+                    <h3 className="text-base font-bold uppercase tracking-tight mb-6" style={{ color: '#F8FAFC' }}>{activeCategoryData.categoryName}</h3>
                     {activeCategoryData.children && activeCategoryData.children.length > 0 ? (
-                      <div className="grid grid-cols-1 gap-y-4">
+                      <div className="grid grid-cols-1 gap-3">
                         {activeCategoryData.children.map((child) => (
                           <button
                             key={child.categoryId}
                             onClick={() => handleCategoryClick(child.categoryId)}
-                            className="text-sm text-gray-500 hover:text-black hover:translate-x-2 transition-all flex items-center gap-3 group text-left"
+                            className="text-sm flex items-center gap-3 group text-left transition hover:translate-x-1"
+                            style={{ color: '#94a3b8' }}
+                            onMouseEnter={e => (e.currentTarget as HTMLElement).style.color = '#00D4FF'}
+                            onMouseLeave={e => (e.currentTarget as HTMLElement).style.color = '#94a3b8'}
                           >
-                            <span className="w-1.5 h-1.5 bg-gray-200 rounded-full group-hover:bg-black transition-colors"></span>
+                            <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: '#00D4FF' }} />
                             <span className="font-medium">{child.categoryName}</span>
                           </button>
                         ))}
                       </div>
                     ) : (
-                      <p className="text-sm text-gray-400 italic">Không có danh mục con</p>
+                      <p className="text-sm italic" style={{ color: '#475569' }}>Không có danh mục con</p>
                     )}
-
-                    <div className="mt-10 pt-6 border-t border-gray-50">
+                    <div className="mt-8 pt-6" style={{ borderTop: '1px solid rgba(0,212,255,0.15)' }}>
                       <button
                         onClick={() => handleCategoryClick(activeCategoryData.categoryId)}
-                        className="text-[11px] font-bold uppercase tracking-widest text-black hover:underline underline-offset-8 transition-all flex items-center gap-2"
+                        className="text-[11px] font-bold uppercase tracking-widest flex items-center gap-2 transition hover:gap-3"
+                        style={{ color: '#00D4FF' }}
                       >
                         Xem tất cả {activeCategoryData.categoryName}
                         <span className="material-symbols-outlined text-sm">arrow_right_alt</span>
@@ -196,179 +178,146 @@ const Header: React.FC<HeaderProps> = ({ cartCount }) => {
           )}
         </div>
 
-        {/* Location Selector */}
-        <button className="hidden xl:flex items-center gap-2 bg-gray-50 border border-gray-100 px-3 py-2 rounded-lg hover:bg-gray-100 transition whitespace-nowrap">
-          <span className="material-symbols-outlined text-xl">location_on</span>
-          <div className="text-left leading-tight">
-            <span className="text-[11px] font-bold text-black uppercase block">Hồ Chí Minh</span>
-          </div>
-          <span className="material-symbols-outlined text-sm">expand_more</span>
-        </button>
-
-        {/* Build PC Link */}
-        <Link to="/build-pc" className="hidden lg:flex items-center gap-2 px-4 py-2 text-xs font-bold uppercase tracking-widest text-gray-600 hover:text-black transition">
+        {/* Build PC */}
+        <Link to="/build-pc" className="hidden lg:flex items-center gap-2 px-4 py-2 text-xs font-bold uppercase tracking-widest transition" style={{ color: '#94a3b8' }}
+          onMouseEnter={e => (e.currentTarget as HTMLElement).style.color = '#00D4FF'}
+          onMouseLeave={e => (e.currentTarget as HTMLElement).style.color = '#94a3b8'}
+        >
           <span className="material-symbols-outlined text-xl">build</span>
           Build PC
         </Link>
 
-
-
-        {/* Search Bar */}
+        {/* Search */}
         <div className="flex-1 relative min-w-[150px]" ref={searchRef}>
           <form onSubmit={handleSearchSubmit}>
-            <input 
-              type="text" 
+            <input
+              type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               onFocus={() => searchQuery.trim() && setShowSuggestions(true)}
-              placeholder="Bạn muốn mua gì hôm nay?" 
-              className="w-full bg-gray-50 border-none px-4 py-2.5 pl-10 rounded-lg text-sm focus:ring-1 focus:ring-black outline-none placeholder:text-gray-400 transition"
+              placeholder="Tìm kiếm linh kiện..."
+              className="w-full px-4 py-2.5 pl-10 rounded-lg text-sm outline-none transition"
+              style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(0,212,255,0.2)', color: '#F8FAFC' }}
             />
-            <button type="submit" className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-black transition">
+            <button type="submit" className="absolute left-3 top-1/2 -translate-y-1/2 transition" style={{ color: '#64748B' }}>
               <span className="material-symbols-outlined text-xl">search</span>
             </button>
           </form>
 
-          {/* Suggestions Dropdown */}
           {showSuggestions && suggestions.length > 0 && (
-            <div className="absolute top-full left-0 right-0 mt-2 bg-white border border-gray-100 rounded-xl shadow-2xl overflow-hidden z-[60]">
-              <div className="p-2 border-b border-gray-50 bg-gray-50/50">
-                <span className="text-[10px] font-bold uppercase tracking-widest text-gray-400 px-2">Gợi ý sản phẩm</span>
+            <div className="absolute top-full left-0 right-0 mt-2 rounded-xl shadow-2xl overflow-hidden z-[60]" style={{ background: '#001a3d', border: '1px solid rgba(0,212,255,0.2)' }}>
+              <div className="p-2 border-b" style={{ borderColor: 'rgba(0,212,255,0.1)' }}>
+                <span className="text-[10px] font-bold uppercase tracking-widest px-2" style={{ color: '#64748B' }}>Gợi ý sản phẩm</span>
               </div>
               <div className="max-h-[400px] overflow-y-auto">
                 {suggestions.map((product) => (
                   <button
                     key={product.id}
                     onClick={() => handleSuggestionClick(product.id)}
-                    className="w-full flex items-center gap-3 p-3 hover:bg-gray-50 transition text-left group"
+                    className="w-full flex items-center gap-3 p-3 transition text-left group"
+                    style={{ color: '#94a3b8' }}
+                    onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = 'rgba(0,212,255,0.08)'}
+                    onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = 'transparent'}
                   >
-                    <div className="w-12 h-12 bg-gray-100 rounded-lg overflow-hidden flex-shrink-0">
-                      <img 
-                        src={product.image} 
-                        alt={product.name} 
-                        className="w-full h-full object-cover group-hover:scale-110 transition duration-300"
-                        referrerPolicy="no-referrer"
-                      />
+                    <div className="w-12 h-12 rounded-lg overflow-hidden flex-shrink-0" style={{ background: 'rgba(255,255,255,0.05)' }}>
+                      <img src={product.image} alt={product.name} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <h4 className="text-sm font-medium text-gray-900 truncate group-hover:text-black transition">{product.name}</h4>
-                      <div className="flex items-center gap-2 mt-0.5">
-                        <span className="text-xs font-bold text-black">{product.price.toLocaleString('vi-VN')}₫</span>
-                        <span className="text-[10px] text-gray-400 uppercase tracking-tighter">{product.category}</span>
-                      </div>
+                      <h4 className="text-sm font-medium truncate" style={{ color: '#F8FAFC' }}>{product.name}</h4>
+                      <span className="text-xs font-bold" style={{ color: '#00D4FF' }}>{product.price.toLocaleString('vi-VN')}₫</span>
                     </div>
-                    <span className="material-symbols-outlined text-gray-300 group-hover:text-black transition text-sm">arrow_forward</span>
+                    <span className="material-symbols-outlined text-sm" style={{ color: '#00D4FF' }}>arrow_forward</span>
                   </button>
                 ))}
               </div>
-              <button 
-                onClick={handleSearchSubmit}
-                className="w-full p-3 text-center text-xs font-bold uppercase tracking-widest text-gray-500 hover:bg-gray-50 hover:text-black transition border-t border-gray-50"
-              >
-                Xem tất cả kết quả cho "{searchQuery}"
-              </button>
             </div>
           )}
         </div>
 
-        {/* Action Icons */}
-        <div className="flex items-center gap-2 md:gap-5">
+        {/* Actions */}
+        <div className="flex items-center gap-2 md:gap-4">
           {/* Cart */}
-          <Link to="/cart" className="flex items-center gap-2 hover:bg-gray-50 p-2 rounded-lg transition group relative">
+          <Link to="/cart" className="flex items-center gap-2 p-2 rounded-lg transition relative" style={{ color: '#94a3b8' }}
+            onMouseEnter={e => (e.currentTarget as HTMLElement).style.color = '#00D4FF'}
+            onMouseLeave={e => (e.currentTarget as HTMLElement).style.color = '#94a3b8'}
+          >
             <div className="relative">
-              <span className="material-symbols-outlined text-2xl text-gray-700">shopping_cart</span>
+              <span className="material-symbols-outlined text-2xl">shopping_cart</span>
               {cartCount > 0 && (
-                <span className="absolute -top-1.5 -right-1.5 bg-black text-white text-[9px] font-bold w-4 h-4 flex items-center justify-center rounded-full">
+                <span className="absolute -top-1.5 -right-1.5 text-white text-[9px] font-bold w-4 h-4 flex items-center justify-center rounded-full" style={{ background: '#00D4FF', color: '#002B5B' }}>
                   {cartCount}
                 </span>
               )}
             </div>
-            <span className="hidden md:block text-[11px] font-bold uppercase tracking-wider text-gray-700">Giỏ hàng</span>
+            <span className="hidden md:block text-[11px] font-bold uppercase tracking-wider">Giỏ hàng</span>
           </Link>
 
           {/* Account */}
           <div className="relative" ref={userMenuRef}>
             {isAuthenticated ? (
-              <button 
+              <button
                 onClick={() => setShowUserMenu(!showUserMenu)}
-                className="flex items-center gap-2 bg-gray-50 md:bg-transparent hover:bg-gray-50 p-2 md:px-3 rounded-lg transition"
+                className="flex items-center gap-2 p-2 md:px-3 rounded-lg transition"
+                style={{ color: '#94a3b8' }}
+                onMouseEnter={e => (e.currentTarget as HTMLElement).style.color = '#00D4FF'}
+                onMouseLeave={e => (e.currentTarget as HTMLElement).style.color = '#94a3b8'}
               >
-                <span className="material-symbols-outlined text-2xl text-gray-700">account_circle</span>
+                <span className="material-symbols-outlined text-2xl">account_circle</span>
                 <div className="hidden md:block text-left">
                   <span className="text-[11px] font-bold uppercase tracking-wider text-gray-700 block leading-none">
                     {user?.name}
                   </span>
                   <span className="text-[9px] text-gray-400 uppercase font-bold">
-                    {user?.role === 'admin' ? 'Quản trị viên' : user?.role === 'staff' ? 'Nhân viên' : 'Thành viên'}
+                    {user?.role}
                   </span>
                 </div>
               </button>
             ) : (
-              <Link to="/login" className="flex items-center gap-2 bg-gray-50 md:bg-transparent hover:bg-gray-50 p-2 md:px-3 rounded-lg transition">
-                <span className="material-symbols-outlined text-2xl text-gray-700">account_circle</span>
-                <span className="hidden md:block text-[11px] font-bold uppercase tracking-wider text-gray-700 leading-tight">
-                  Đăng nhập
-                </span>
+              <Link to="/login" className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-bold uppercase tracking-widest transition" style={{ background: '#00D4FF', color: '#002B5B' }}>
+                <span className="material-symbols-outlined text-xl">login</span>
+                <span className="hidden md:block">Đăng nhập</span>
               </Link>
             )}
 
-            {/* User Dropdown */}
             {showUserMenu && isAuthenticated && (
-              <div className="absolute top-full right-0 mt-2 w-48 bg-white border border-gray-100 rounded-xl shadow-2xl overflow-hidden z-[80] animate-in fade-in slide-in-from-top-2 duration-200">
-                <div className="p-4 border-b border-gray-50 bg-gray-50/50">
-                  <p className="text-xs font-bold text-black truncate">{user?.email}</p>
+              <div className="absolute top-full right-0 mt-2 w-52 rounded-xl shadow-2xl overflow-hidden z-[80] animate-in fade-in slide-in-from-top-2 duration-200" style={{ background: '#001a3d', border: '1px solid rgba(0,212,255,0.2)' }}>
+                <div className="p-4 border-b" style={{ borderColor: 'rgba(0,212,255,0.1)', background: 'rgba(0,212,255,0.05)' }}>
+                  <p className="text-xs font-bold truncate" style={{ color: '#94a3b8' }}>{user?.email}</p>
                 </div>
                 <div className="p-1">
-                  {user?.role === 'admin' && (
-                    <Link 
-                      to="/admin" 
-                      onClick={() => setShowUserMenu(false)}
-                      className="flex items-center gap-3 w-full p-3 text-left text-xs font-bold uppercase tracking-widest text-gray-600 hover:bg-gray-50 hover:text-black transition rounded-lg"
+                  {(user?.role === 'admin') && (
+                    <Link to="/admin" onClick={() => setShowUserMenu(false)} className="flex items-center gap-3 w-full p-3 text-left text-xs font-bold uppercase tracking-widest rounded-lg transition" style={{ color: '#94a3b8' }}
+                      onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'rgba(0,212,255,0.1)'; (e.currentTarget as HTMLElement).style.color = '#00D4FF'; }}
+                      onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent'; (e.currentTarget as HTMLElement).style.color = '#94a3b8'; }}
                     >
-                      <span className="material-symbols-outlined text-lg">dashboard</span>
-                      Quản lý
+                      <span className="material-symbols-outlined text-lg">dashboard</span>Quản lý
                     </Link>
                   )}
-                  {user?.role === 'staff' && (
-                    <Link 
-                      to="/staff" 
-                      onClick={() => setShowUserMenu(false)}
-                      className="flex items-center gap-3 w-full p-3 text-left text-xs font-bold uppercase tracking-widest text-gray-600 hover:bg-gray-50 hover:text-black transition rounded-lg"
+                  {(user?.role === 'staff') && (
+                    <Link to="/staff" onClick={() => setShowUserMenu(false)} className="flex items-center gap-3 w-full p-3 text-left text-xs font-bold uppercase tracking-widest rounded-lg transition" style={{ color: '#94a3b8' }}
+                      onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'rgba(0,212,255,0.1)'; (e.currentTarget as HTMLElement).style.color = '#00D4FF'; }}
+                      onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent'; (e.currentTarget as HTMLElement).style.color = '#94a3b8'; }}
                     >
-                      <span className="material-symbols-outlined text-lg">dashboard</span>
-                      Quản lý
+                      <span className="material-symbols-outlined text-lg">dashboard</span>Quản lý
                     </Link>
                   )}
-                  <Link 
-                    to="/orders" 
-                    onClick={() => setShowUserMenu(false)}
-                    className="flex items-center gap-3 w-full p-3 text-left text-xs font-bold uppercase tracking-widest text-gray-600 hover:bg-gray-50 hover:text-black transition rounded-lg"
+                  {[
+                    { to: '/orders', icon: 'receipt_long', label: 'Đơn hàng' },
+                    { to: '/warranty', icon: 'verified_user', label: 'Bảo hành' },
+                    { to: '/profile', icon: 'manage_accounts', label: 'Hồ sơ' },
+                  ].map(item => (
+                    <Link key={item.to} to={item.to} onClick={() => setShowUserMenu(false)} className="flex items-center gap-3 w-full p-3 text-left text-xs font-bold uppercase tracking-widest rounded-lg transition" style={{ color: '#94a3b8' }}
+                      onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'rgba(0,212,255,0.1)'; (e.currentTarget as HTMLElement).style.color = '#00D4FF'; }}
+                      onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent'; (e.currentTarget as HTMLElement).style.color = '#94a3b8'; }}
+                    >
+                      <span className="material-symbols-outlined text-lg">{item.icon}</span>{item.label}
+                    </Link>
+                  ))}
+                  <button onClick={handleLogout} className="flex items-center gap-3 w-full p-3 text-left text-xs font-bold uppercase tracking-widest rounded-lg transition" style={{ color: '#ef4444' }}
+                    onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = 'rgba(239,68,68,0.1)'}
+                    onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = 'transparent'}
                   >
-                    <span className="material-symbols-outlined text-lg">receipt_long</span>
-                    Đơn hàng
-                  </Link>
-                  <Link 
-                    to="/warranty" 
-                    onClick={() => setShowUserMenu(false)}
-                    className="flex items-center gap-3 w-full p-3 text-left text-xs font-bold uppercase tracking-widest text-gray-600 hover:bg-gray-50 hover:text-black transition rounded-lg"
-                  >
-                    <span className="material-symbols-outlined text-lg">verified_user</span>
-                    Bảo hành
-                  </Link>
-                  <Link 
-                    to="/profile" 
-                    onClick={() => setShowUserMenu(false)}
-                    className="flex items-center gap-3 w-full p-3 text-left text-xs font-bold uppercase tracking-widest text-gray-600 hover:bg-gray-50 hover:text-black transition rounded-lg"
-                  >
-                    <span className="material-symbols-outlined text-lg">manage_accounts</span>
-                    Hồ sơ
-                  </Link>
-                  <button 
-                    onClick={handleLogout}
-                    className="flex items-center gap-3 w-full p-3 text-left text-xs font-bold uppercase tracking-widest text-red-500 hover:bg-red-50 transition rounded-lg"
-                  >
-                    <span className="material-symbols-outlined text-lg">logout</span>
-                    Đăng xuất
+                    <span className="material-symbols-outlined text-lg">logout</span>Đăng xuất
                   </button>
                 </div>
               </div>
