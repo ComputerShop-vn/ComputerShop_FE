@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import AdminLayout from '../../components/layout/AdminLayout';
 import { attributeService } from '../../api/services/attributeService';
 import Pagination from '../../components/ui/Pagination';
+import { showToast, showConfirm } from '../../components/ui/Toast';
 import {
   AttributeResponse,
   AttributeCreationRequest,
@@ -58,11 +59,12 @@ const AdminAttributes: React.FC = () => {
         attributeName: formData.trim(),
       };
       await attributeService.createAttribute(request);
+      showToast('Thêm thuộc tính thành công', 'success');
       setShowAddModal(false);
       setFormData('');
       fetchAttributes(currentPage);
     } catch (err: any) {
-      alert(err.message || 'Failed to create attribute');
+      showToast(err.message || 'Failed to create attribute', 'error');
     }
   };
 
@@ -76,24 +78,27 @@ const AdminAttributes: React.FC = () => {
         attributeName: formData.trim(),
       };
       await attributeService.updateAttribute(selectedAttribute.attributeId, request);
+      showToast('Cập nhật thuộc tính thành công', 'success');
       setShowEditModal(false);
       setSelectedAttribute(null);
       setFormData('');
       fetchAttributes(currentPage);
     } catch (err: any) {
-      alert(err.message || 'Failed to update attribute');
+      showToast(err.message || 'Failed to update attribute', 'error');
     }
   };
 
   // Handle delete attribute
   const handleDelete = async (id: number) => {
-    if (!window.confirm('Bạn có chắc chắn muốn xóa thuộc tính này?')) return;
+    const ok = await showConfirm({ title: 'Xóa thuộc tính', message: 'Bạn có chắc chắn muốn xóa thuộc tính này?', confirmText: 'Xóa', danger: true });
+    if (!ok) return;
 
     try {
       await attributeService.deleteAttribute(id);
+      showToast('Xóa thuộc tính thành công', 'success');
       fetchAttributes(currentPage);
     } catch (err: any) {
-      alert(err.message || 'Failed to delete attribute');
+      showToast(err.message || 'Failed to delete attribute', 'error');
     }
   };
 

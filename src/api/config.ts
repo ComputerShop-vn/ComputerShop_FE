@@ -81,6 +81,7 @@ export const API_ENDPOINTS = {
   PC_BUILDS: `${API_VERSION}/pc-builds`,
   PC_BUILDS_DRAFT: `${API_VERSION}/pc-builds/draft`,
   PC_BUILDS_DRAFT_ITEMS: `${API_VERSION}/pc-builds/draft/items`,
+  PC_BUILDS_DRAFT_ITEM: (buildItemId: number) => `${API_VERSION}/pc-builds/draft/items/${buildItemId}`,
   PC_BUILDS_DRAFT_SAVE: `${API_VERSION}/pc-builds/draft/save`,
   PC_BUILDS_DRAFT_ORDER: `${API_VERSION}/pc-builds/draft/order`,
   PC_BUILDS_COMPATIBLE: `${API_VERSION}/pc-builds/compatible-variants`,

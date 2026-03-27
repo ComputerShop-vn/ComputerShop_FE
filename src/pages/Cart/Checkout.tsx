@@ -7,6 +7,8 @@ import { orderService } from '../../api/services/orderService';
 import { paymentService } from '../../api/services/paymentService';
 import { installmentService } from '../../api/services/installmentService';
 import { InstallmentPackageResponse, InstallmentPreviewResponse } from '../../api/types/installment';
+import { showToast } from '../../components/ui/Toast';
+
 
 const fmt = (v: number) => new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(v);
 const fmtDate = (d: string) => new Date(d).toLocaleDateString('vi-VN');
@@ -63,13 +65,13 @@ const Checkout: React.FC = () => {
     e.preventDefault();
     
     if (!authUser) {
-      alert('Vui lòng đăng nhập để đặt hàng');
+      showToast('Vui lòng đăng nhập để đặt hàng', 'warning');
       navigate('/login');
       return;
     }
 
     if (!formData.fullName.trim() || !formData.phoneNumber.trim() || !formData.address.trim()) {
-      alert('Vui lòng điền đầy đủ thông tin giao hàng');
+      showToast('Vui lòng điền đầy đủ thông tin giao hàng', 'warning');
       return;
     }
 
@@ -100,15 +102,15 @@ const Checkout: React.FC = () => {
       // If payment method is full (VNPay) OR installment, redirect to VNPay
       if (paymentMethod === 'full' || paymentMethod === 'installment') {
         try {
-          const payment = await paymentService.createPayment(order.orderId);
+          const payment = await paymentService.createPayment(order.orderId, undefined, 0);
           if (!payment.paymentUrl) throw new Error('Không nhận được link thanh toán từ server.');
-          await clearCart(); // Clear cart trước khi redirect
           paymentService.redirectToPayment(payment.paymentUrl);
           return;
         } catch (paymentError: any) {
           console.error('Payment error:', paymentError);
           setIsProcessing(false);
-          alert(paymentError.message || 'Đơn hàng đã được tạo nhưng không thể tạo link thanh toán. Vui lòng vào trang đơn hàng để thanh toán lại.');
+          showToast(paymentError.message || 'Đơn hàng đã được tạo nhưng không thể tạo link thanh toán. Vui lòng vào trang đơn hàng để thanh toán lại.', 'error');
+          showToast(paymentError.message || 'Đơn hàng đã tạo nhưng không thể tạo link thanh toán.', 'error');
           navigate(`/orders/${order.orderId}`);
           return;
         }
@@ -116,14 +118,15 @@ const Checkout: React.FC = () => {
 
       // For COD, just show success and redirect
       setIsProcessing(false);
-      alert('Đơn hàng đã được đặt thành công! Cảm ơn bạn đã mua sắm.');
+      showToast('Đơn hàng đã được đặt thành công! Cảm ơn bạn đã mua sắm.', 'success');
+      showToast('Đặt hàng thành công! Cảm ơn bạn đã mua sắm.', 'success');
       await clearCart();
       navigate('/orders');
       
     } catch (error: any) {
       setIsProcessing(false);
       console.error('Order error:', error);
-      alert(error.message || 'Không thể tạo đơn hàng. Vui lòng thử lại.');
+      showToast(error.message || 'Không thể tạo đơn hàng. Vui lòng thử lại.', 'error');
     }
   };
 
@@ -333,7 +336,12 @@ const Checkout: React.FC = () => {
                     <h4 className="text-xs font-bold text-black truncate">{item.name}</h4>
                     <p className="text-[10px] text-gray-400">SL: {item.quantity}</p>
                   </div>
-                  <p className="text-xs font-bold text-black">{fmt(item.price * item.quantity)}</p>
+                  <div className="text-right flex-shrink-0">
+                    <p className="text-xs font-bold text-black">{fmt(item.price * item.quantity)}</p>
+                    {item.originalPrice && (
+                      <p className="text-[10px] text-red-400 line-through">{fmt(item.originalPrice * item.quantity)}</p>
+                    )}
+                  </div>
                 </div>
               ))}
             </div>

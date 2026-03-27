@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import AdminLayout from '../../components/layout/AdminLayout';
 import { warrantyService } from '../../api/services/warrantyService';
 import { WarrantyResponse, ClaimResponse, ClaimStatus, SolutionType, WarrantyStatus } from '../../api/types/warranty';
+import { showToast } from '../../components/ui/Toast';
 
 const STATUS_LABEL: Record<WarrantyStatus, { label: string; color: string; bg: string }> = {
   ACTIVE:  { label: 'Còn hiệu lực', color: 'text-green-700', bg: 'bg-green-50 border-green-200' },
@@ -40,6 +41,9 @@ const Warranties: React.FC = () => {
   const [editWarrantyId, setEditWarrantyId] = useState<number | null>(null);
   const [newWarrantyStatus, setNewWarrantyStatus] = useState<WarrantyStatus>('ACTIVE');
   const [savingWarranty, setSavingWarranty] = useState(false);
+  const [creatingClaimId, setCreatingClaimId] = useState<number | null>(null);
+  const [newClaimNote, setNewClaimNote] = useState('');
+  const [savingNewClaim, setSavingNewClaim] = useState(false);
 
   const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -77,8 +81,9 @@ const Warranties: React.FC = () => {
       });
       setEditClaim(null);
       await refreshResults();
+      showToast('Cập nhật yêu cầu bảo hành thành công', 'success');
     } catch {
-      alert('Không thể cập nhật yêu cầu bảo hành.');
+      showToast('Không thể cập nhật yêu cầu bảo hành.', 'error');
     } finally {
       setSavingClaim(false);
     }
@@ -90,10 +95,25 @@ const Warranties: React.FC = () => {
       await warrantyService.updateStatus(id, { status: newWarrantyStatus });
       setEditWarrantyId(null);
       await refreshResults();
+      showToast('Cập nhật trạng thái bảo hành thành công', 'success');
     } catch {
-      alert('Không thể cập nhật trạng thái bảo hành.');
+      showToast('Không thể cập nhật trạng thái bảo hành.', 'error');
     } finally {
       setSavingWarranty(false);
+    }
+  };
+
+  const handleCreateClaim = async (warrantyId: number) => {
+    setSavingNewClaim(true);
+    try {
+      await warrantyService.createClaim({ warrantyId, customerNote: newClaimNote.trim() || undefined });
+      setCreatingClaimId(null);
+      setNewClaimNote('');
+      await refreshResults();
+    } catch {
+      alert('Không thể tạo yêu cầu sửa chữa.');
+    } finally {
+      setSavingNewClaim(false);
     }
   };
 
@@ -246,6 +266,40 @@ const Warranties: React.FC = () => {
                     </p>
                   </div>
 
+                  {/* Form tạo claim mới */}
+                  {creatingClaimId === w.id && (
+                    <div className="mb-4 border-t border-gray-50 pt-4 space-y-3">
+                      <p className="text-xs font-bold uppercase tracking-widest text-gray-500">Mô tả vấn đề</p>
+                      <textarea
+                        value={newClaimNote}
+                        onChange={e => setNewClaimNote(e.target.value)}
+                        rows={3}
+                        className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-black resize-none"
+                        placeholder="Mô tả tình trạng sản phẩm cần sửa chữa..."
+                      />
+                      <div className="flex gap-2">
+                        <button onClick={() => handleCreateClaim(w.id)} disabled={savingNewClaim}
+                          className="px-5 py-2 bg-black text-white text-xs font-bold uppercase tracking-widest rounded-xl hover:bg-gray-800 transition disabled:opacity-50">
+                          {savingNewClaim ? 'Đang gửi...' : 'Gửi yêu cầu'}
+                        </button>
+                        <button onClick={() => { setCreatingClaimId(null); setNewClaimNote(''); }}
+                          className="px-5 py-2 border border-gray-200 text-xs font-bold uppercase tracking-widest rounded-xl hover:bg-gray-50 transition">
+                          Hủy
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  {w.status === 'ACTIVE' && creatingClaimId !== w.id && (
+                    <button
+                      onClick={() => { setCreatingClaimId(w.id); setNewClaimNote(''); }}
+                      className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-black border border-black px-4 py-2.5 rounded-xl hover:bg-black hover:text-white transition"
+                    >
+                      <span className="material-symbols-outlined text-base">build</span>
+                      Tạo yêu cầu sửa chữa
+                    </button>
+                  )}
+
                   {(!w.claims || w.claims.length === 0) ? (
                     <div className="text-center py-6 bg-gray-50 rounded-xl">
                       <span className="material-symbols-outlined text-3xl text-gray-300 mb-1 block">inbox</span>
@@ -254,7 +308,7 @@ const Warranties: React.FC = () => {
                   ) : (
                     <div className="space-y-4">
                       {w.claims.map((c: ClaimResponse) => {
-                        const cs = CLAIM_STATUS_LABEL[c.status];
+                        const cs = CLAIM_STATUS_LABEL[c.status] ?? { label: c.status, color: 'text-gray-500 bg-gray-50 border-gray-200' };
                         const isEditing = editClaim?.claimId === c.claimId;
 
                         return (

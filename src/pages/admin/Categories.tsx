@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import AdminLayout from '../../components/layout/AdminLayout';
 import { categoryService } from '../../api/services/categoryService';
 import Pagination from '../../components/ui/Pagination';
+import { showToast, showConfirm } from '../../components/ui/Toast';
 import { CategoryResponse, CategoryRequest } from '../../api/types/category';
 
 const AdminCategories: React.FC = () => {
@@ -54,11 +55,12 @@ const AdminCategories: React.FC = () => {
         description: formData.description.trim() || undefined,
       };
       await categoryService.createCategory(request);
+      showToast('Thêm danh mục thành công', 'success');
       setShowAddModal(false);
       setFormData({ categoryName: '', description: '' });
       fetchCategories(currentPage);
     } catch (err: any) {
-      alert(err.message || 'Failed to create category');
+      showToast(err.message || 'Failed to create category', 'error');
     }
   };
 
@@ -72,23 +74,26 @@ const AdminCategories: React.FC = () => {
         description: formData.description.trim() || undefined,
       };
       await categoryService.updateCategory(selectedCategory.categoryId, request);
+      showToast('Cập nhật danh mục thành công', 'success');
       setShowEditModal(false);
       setSelectedCategory(null);
       setFormData({ categoryName: '', description: '' });
       fetchCategories(currentPage);
     } catch (err: any) {
-      alert(err.message || 'Failed to update category');
+      showToast(err.message || 'Failed to update category', 'error');
     }
   };
 
   const handleDelete = async (id: number) => {
-    if (!window.confirm('Bạn có chắc chắn muốn xóa danh mục này?')) return;
+    const ok = await showConfirm({ title: 'Xóa danh mục', message: 'Bạn có chắc chắn muốn xóa danh mục này?', confirmText: 'Xóa', danger: true });
+    if (!ok) return;
 
     try {
       await categoryService.deleteCategory(id);
+      showToast('Xóa danh mục thành công', 'success');
       fetchCategories(currentPage);
     } catch (err: any) {
-      alert(err.message || 'Failed to delete category');
+      showToast(err.message || 'Failed to delete category', 'error');
     }
   };
 

@@ -10,6 +10,7 @@ import { BrandResponse } from '../../api/types/brand';
 import { AttributeResponse } from '../../api/types/attribute';
 import { PagedResponse } from '../../api/types/common';
 import Pagination from '../../components/ui/Pagination';
+import { showToast, showConfirm } from '../../components/ui/Toast';
 
 const PAGE_SIZE = 10;
 
@@ -106,12 +107,14 @@ const AdminProducts: React.FC = () => {
   });
 
   const handleDelete = async (id: number) => {
-    if (!window.confirm('Bạn có chắc chắn muốn xóa sản phẩm này?')) return;
+    const ok = await showConfirm({ title: 'Xóa sản phẩm', message: 'Bạn có chắc chắn muốn xóa sản phẩm này?', confirmText: 'Xóa', danger: true });
+    if (!ok) return;
     try {
       await productService.deleteProduct(id);
+      showToast('Xóa sản phẩm thành công', 'success');
       fetchProducts(currentPage);
     } catch (err: any) {
-      alert(err.message || 'Failed to delete product');
+      showToast(err.message || 'Failed to delete product', 'error');
     }
   };
 
@@ -190,13 +193,13 @@ const AdminProducts: React.FC = () => {
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.productName.trim() || formData.categoryId === 0 || formData.brandId === 0) {
-      alert('Vui lòng điền đầy đủ thông tin sản phẩm');
+      showToast('Vui lòng điền đầy đủ thông tin sản phẩm', 'warning');
       return;
     }
 
     const validVariants = variants.filter((v) => v.variantName.trim());
     if (validVariants.length === 0) {
-      alert('Vui lòng thêm ít nhất 1 phiên bản (variant) cho sản phẩm');
+      showToast('Vui lòng thêm ít nhất 1 phiên bản (variant) cho sản phẩm', 'warning');
       return;
     }
 
@@ -217,12 +220,13 @@ const AdminProducts: React.FC = () => {
         warrantyMonths: formData.warrantyMonths ? parseInt(formData.warrantyMonths) : undefined,
         variants: parsedVariants,
       }, images.length > 0 ? images : undefined);
+      showToast('Thêm sản phẩm thành công', 'success');
       setShowAddModal(false);
       resetForm();
       fetchProducts(0);
       setCurrentPage(0);
     } catch (err: any) {
-      alert(err.message || 'Failed to create product');
+      showToast(err.message || 'Failed to create product', 'error');
     }
   };
 
@@ -231,7 +235,7 @@ const AdminProducts: React.FC = () => {
     if (!selectedProduct) return;
 
     if (editVariants.length === 0 || !editVariants.some((v) => v.variantName.trim())) {
-      alert('Vui lòng có ít nhất 1 variant hợp lệ');
+      showToast('Vui lòng có ít nhất 1 variant hợp lệ', 'warning');
       return;
     }
 
@@ -261,12 +265,13 @@ const AdminProducts: React.FC = () => {
         }));
 
       await productService.updateProduct(selectedProduct.productId, updateData, images.length > 0 ? images : undefined);
+      showToast('Cập nhật sản phẩm thành công', 'success');
       setShowEditModal(false);
       setSelectedProduct(null);
       resetForm();
       fetchProducts(currentPage);
     } catch (err: any) {
-      alert(err.message || 'Failed to update product');
+      showToast(err.message || 'Failed to update product', 'error');
     }
   };
 

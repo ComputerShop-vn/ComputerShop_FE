@@ -11,6 +11,14 @@ const PaymentCallback: React.FC = () => {
   const [status, setStatus] = useState<'processing' | 'success' | 'failed'>('processing');
   const [orderId, setOrderId] = useState<string | null>(null);
   const hasRun = useRef(false);
+  const cartCleared = useRef(false);
+
+  useEffect(() => {
+    if (status === 'success' && !cartCleared.current) {
+      cartCleared.current = true;
+      clearCart().catch(err => console.error('Failed to clear cart:', err));
+    }
+  }, [status, clearCart]);
 
   useEffect(() => {
     if (hasRun.current) return;

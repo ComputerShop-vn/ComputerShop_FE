@@ -3,12 +3,15 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { pcBuildService } from '../api/services/pcBuildService';
 import { productService } from '../api/services/productService';
+import { categoryService } from '../api/services/categoryService';
 import { userService } from '../api/services/userService';
 import { installmentService } from '../api/services/installmentService';
 import {
   PCBuildResponse, PCBuildItemResponse, ComponentType,
   COMPONENT_DISPLAY_NAMES, COMPONENT_ICONS, REQUIRED_COMPONENTS, MULTI_SLOT_COMPONENTS,
+  COMPONENT_CATEGORY_NAMES,
 } from '../api/types/pcbuild';
+import { CategoryResponse } from '../api/types/category';
 import { ProductResponse } from '../api/types/product';
 import { InstallmentPackageResponse } from '../api/types/installment';
 import { paymentService } from '../api/services/paymentService';
@@ -41,6 +44,8 @@ const BuildPC: React.FC = () => {
   const [showOrderModal, setShowOrderModal] = useState(false);
   const [placingOrder, setPlacingOrder] = useState(false);
   const [installmentPackages, setInstallmentPackages] = useState<InstallmentPackageResponse[]>([]);
+  const [ramSlotFull, setRamSlotFull] = useState(false);
+  const [categoryCache, setCategoryCache] = useState<CategoryResponse[]>([]);
   const [orderForm, setOrderForm] = useState({
     recipientName: '', recipientPhone: '', shippingAddress: '',
     paymentMethod: 'COD' as 'COD' | 'VNPAY',
@@ -69,6 +74,11 @@ const BuildPC: React.FC = () => {
   useEffect(() => { fetchDraft(); }, [fetchDraft]);
   useEffect(() => { fetchMyBuilds(); }, [fetchMyBuilds]);
 
+  // Cache categories để resolve categoryId khi BE trả null
+  useEffect(() => {
+    categoryService.getAllCategories().then(setCategoryCache).catch(() => {});
+  }, []);
+
   useEffect(() => {
     if (!isAuthenticated) return;
     userService.getMyProfile().then(p => {
@@ -96,6 +106,19 @@ const BuildPC: React.FC = () => {
 
   const missingRequired = REQUIRED_COMPONENTS.filter(c => getItems(c).length === 0);
 
+  // Tính RAM slot limit từ mainboard
+  const mainboardItem = getItems('MAINBOARD')[0];
+  const ramSlotLimit = (() => {
+    // Không có mainboard → không giới hạn
+    if (!mainboardItem) return Infinity;
+    // Backend trả về RAM Slots qua compatible-variants, không có trong item response
+    // Dùng giá trị mặc định phổ biến: 4 slots ATX, 2 slots mATX
+    // Sẽ được override khi backend báo lỗi 10005
+    return Infinity; // để backend kiểm soát, frontend chỉ disable sau khi nhận lỗi
+  })();
+  const currentRamQty = getItems('RAM').reduce((sum, i) => sum + (i.quantity || 1), 0);
+  const isRamSlotFull = ramSlotFull; // vẫn dùng state từ backend error
+
   // ── Open slot picker with compatibility check ──
   const openSlot = async (slot: ComponentType, excludeItemId?: number) => {
     if (!isAuthenticated) { navigate('/login'); return; }
@@ -108,21 +131,35 @@ const BuildPC: React.FC = () => {
         .filter(i => excludeItemId ? i.buildItemId !== excludeItemId : true)
         .map(i => ({ componentType: i.componentType, variantId: i.variantId }));
 
+      // Resolve categoryId từ cache theo tên category của slot
+      const slotCategoryName = COMPONENT_CATEGORY_NAMES[slot].toLowerCase();
+      const fallbackCategoryId = categoryCache.find(
+        c => c.categoryName.toLowerCase().includes(slotCategoryName)
+      )?.categoryId;
+
       if (currentItems.length > 0) {
         try {
           const compat = await pcBuildService.getCompatibleVariants({ currentItems, targetComponentType: slot });
-          if (compat.categoryId) {
+          const categoryId = compat.categoryId ?? fallbackCategoryId;
+          if (categoryId) {
             const attributes = (compat.hints || []).map(h => {
-              const op = (h.operator || 'eq').toLowerCase();
-              return op === 'eq' ? `${h.attributeName}:${h.value}` : `${h.attributeName}:${op}:${h.value}`;
+              const op = ((h as any).comparison || h.operator || 'eq').toLowerCase();
+              const val = (h as any).requiredValue ?? h.value;
+              return op === 'eq' ? `${h.attributeName}:${val}` : `${h.attributeName}:${op}:${val}`;
             });
-            setSlotProducts(await productService.getAllProducts({ categoryId: compat.categoryId, attributes } as any));
+            setSlotProducts(await productService.getAllProducts({ categoryId, attributes } as any));
             return;
           }
         } catch { /* fallthrough */ }
       }
-      const all = await productService.getAllProducts();
-      setSlotProducts(all.filter(p => p.categoryName?.toLowerCase().includes(getCategoryName(slot).toLowerCase())));
+
+      // Fallback: dùng categoryId từ cache nếu có, không thì filter tên
+      if (fallbackCategoryId) {
+        setSlotProducts(await productService.getAllProducts({ categoryId: fallbackCategoryId } as any));
+      } else {
+        const all = await productService.getAllProducts();
+        setSlotProducts(all.filter(p => p.categoryName?.toLowerCase().includes(slotCategoryName)));
+      }
     } finally {
       setSlotLoading(false);
     }
@@ -130,43 +167,75 @@ const BuildPC: React.FC = () => {
 
   const closeModal = () => { setSelectingSlot(null); setReplacingItemId(null); };
 
-  // ── Select product: upsert item (PUT /pc-builds/draft/items) ──
   const handleSelectProduct = async (product: ProductResponse) => {
     if (!selectingSlot) return;
     const variant = product.variants?.[0];
     if (!variant) { showToast('Sản phẩm này chưa có variant.', 'warning'); return; }
     try {
-      const updated = await pcBuildService.upsertItem({
-        componentType: selectingSlot,
-        variantId: variant.variantId,
-        quantity: 1,
-      });
-
       if (replacingItemId !== null) {
-        // Thay thế: loại bỏ item cũ khỏi response của server
-        const withoutOld = updated.items.filter(i => i.buildItemId !== replacingItemId);
-        setBuild({
-          ...updated,
-          items: withoutOld,
-          totalPrice: withoutOld.reduce((s, i) => s + i.subtotal, 0),
+        // Xóa item cũ qua API trước
+        try { await pcBuildService.removeItem(replacingItemId); } catch { /* ignore */ }
+        // Upsert item mới
+        const updated = await pcBuildService.upsertItem({
+          componentType: selectingSlot,
+          variantId: variant.variantId,
+          quantity: 1,
         });
+        setBuild(updated);
+        // Reset ramSlotFull nếu đổi mainboard
+        if (selectingSlot === 'MAINBOARD') setRamSlotFull(false);
         showToast('Đã thay thế linh kiện.', 'success');
       } else {
-        setBuild(updated);
+        // Tính quantity hiện tại của variantId này trong build
+        const existingItem = build?.items.find(i => i.componentType === selectingSlot && i.variantId === variant.variantId);
+        const currentQty = existingItem?.quantity || 0;
+        const updated = await pcBuildService.upsertItem({
+          componentType: selectingSlot,
+          variantId: variant.variantId,
+          quantity: currentQty + 1,
+        });
+        console.log('[BuildPC] upsert response items:', JSON.stringify(updated.items?.map(i => ({ id: i.buildItemId, type: i.componentType, qty: i.quantity }))));
+        setBuild({ ...updated });
+        // Reset ramSlotFull nếu đổi mainboard hoặc xóa RAM
+        if (selectingSlot === 'MAINBOARD') setRamSlotFull(false);
         showToast('Đã thêm linh kiện vào cấu hình.', 'success');
       }
       closeModal();
     } catch (err: any) {
-      showToast(err.message || 'Không thể thêm linh kiện', 'error');
+      const msg = err.message || '';
+      const code = err.code;
+      if (code === 10005 || msg.toLowerCase().includes('ram slot')) {
+        showToast('Bo mạch chủ đã đầy slot RAM, không thể thêm.', 'error');
+        setRamSlotFull(true);
+      } else {
+        showToast(msg || 'Không thể thêm linh kiện', 'error');
+      }
     }
   };
 
-  // ── Remove item locally (no delete API) ──
-  const handleRemoveItem = (buildItemId: number) => {
+  // ── Remove item via API ──
+  const handleRemoveItem = async (buildItemId: number) => {
     if (!build) return;
-    const remaining = build.items.filter(i => i.buildItemId !== buildItemId);
-    setBuild({ ...build, items: remaining, totalPrice: remaining.reduce((s, i) => s + i.subtotal, 0) });
-    showToast('Đã xóa. Lưu lại để cập nhật.', 'info');
+    const item = build.items.find(i => i.buildItemId === buildItemId);
+    try {
+      if (item && (item.quantity || 1) > 1) {
+        // Xóa item cũ rồi upsert lại với quantity - 1
+        await pcBuildService.removeItem(buildItemId);
+        const updated = await pcBuildService.upsertItem({
+          componentType: item.componentType,
+          variantId: item.variantId,
+          quantity: item.quantity - 1,
+        });
+        setBuild({ ...updated });
+        if (item.componentType === 'RAM') setRamSlotFull(false);
+      } else {
+        const updated = await pcBuildService.removeItem(buildItemId);
+        setBuild({ ...updated });
+        if (item?.componentType === 'RAM' || item?.componentType === 'MAINBOARD') setRamSlotFull(false);
+      }      showToast('Đã xóa linh kiện.', 'success');
+    } catch (err: any) {
+      showToast(err.message || 'Không thể xóa linh kiện', 'error');
+    }
   };
 
   // ── Save build (PUT /pc-builds/draft/save) ──
@@ -235,9 +304,8 @@ const BuildPC: React.FC = () => {
       await fetchMyBuilds();
 
       if (orderForm.paymentMethod === 'VNPAY') {
-        // Với FULL payment: installmentNo = 0 (theo API doc, installmentNo=0 cho FULL)
-        // Với INSTALLMENT: installmentNo = 1 (kỳ đầu tiên - down payment)
-        const installmentNo = orderForm.paymentMode === 'INSTALLMENT' ? 0 : undefined;
+        // installmentNo = 0 cho cả FULL và INSTALLMENT (down payment)
+        const installmentNo = 0;
         const payment = await paymentService.createPayment(order.orderId, undefined, installmentNo);
         if (!payment.paymentUrl) throw new Error('Không nhận được link thanh toán.');
         paymentService.redirectToPayment(payment.paymentUrl);
@@ -341,38 +409,38 @@ const BuildPC: React.FC = () => {
                     <div className="flex-1 w-full space-y-2">
                       {items.length === 0 ? (
                         <p className="text-sm text-gray-300 italic">Chưa chọn linh kiện</p>
-                      ) : items.map((it, idx) => (
-                        <div key={it.buildItemId ?? idx} className="flex items-center gap-3 p-2 rounded-xl hover:bg-gray-50 transition">
-                          <img src={it.thumbnailUrl || '/placeholder.png'} alt={it.productName}
-                            className="w-12 h-12 object-cover rounded-lg bg-gray-50 flex-shrink-0"
-                            onError={(e: React.SyntheticEvent<HTMLImageElement>) => { e.currentTarget.src = '/placeholder.png'; }} />
-                          <div className="flex-1 min-w-0">
-                            <p className="text-sm font-bold text-black truncate">{it.productName}</p>
-                            <p className="text-xs text-gray-400">{it.variantName}</p>
-                            <div className="flex items-center gap-2 mt-0.5">
-                              <p className="text-xs font-bold text-gray-700">{fmt(it.price)}</p>
-                              {it.quantity > 1 && (
-                                <span className="text-[10px] font-bold bg-blue-50 text-blue-600 px-2 py-0.5 rounded-full">× {it.quantity} = {fmt(it.price * it.quantity)}</span>
-                              )}
+                      ) : items.flatMap((it) =>
+                        // Expand theo quantity: 1 item qty=2 → hiển thị 2 dòng
+                        Array.from({ length: it.quantity || 1 }, (_, qIdx) => (
+                          <div key={`${it.buildItemId}-${qIdx}`} className="flex items-center gap-3 p-2 rounded-xl hover:bg-gray-50 transition">
+                            <img src={it.thumbnailUrl || '/placeholder.png'} alt={it.productName}
+                              className="w-12 h-12 object-cover rounded-lg bg-gray-50 flex-shrink-0"
+                              onError={(e: React.SyntheticEvent<HTMLImageElement>) => { e.currentTarget.src = '/placeholder.png'; }} />
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm font-bold text-black truncate">{it.productName}</p>
+                              <p className="text-xs text-gray-400">{it.variantName}</p>
+                              <p className="text-xs font-bold text-gray-700 mt-0.5">{fmt(it.price)}</p>
                             </div>
+                            <button onClick={() => openSlot(slot, it.buildItemId)} title="Thay thế"
+                              className="p-1.5 hover:bg-gray-100 text-gray-300 hover:text-gray-600 rounded-lg transition flex-shrink-0">
+                              <span className="material-symbols-outlined text-base">swap_horiz</span>
+                            </button>
+                            <button onClick={() => handleRemoveItem(it.buildItemId)} title="Xóa"
+                              className="p-1.5 hover:bg-red-50 text-gray-300 hover:text-red-500 rounded-lg transition flex-shrink-0">
+                              <span className="material-symbols-outlined text-base">delete</span>
+                            </button>
                           </div>
-                          <button onClick={() => openSlot(slot, it.buildItemId)} title="Thay thế"
-                            className="p-1.5 hover:bg-gray-100 text-gray-300 hover:text-gray-600 rounded-lg transition flex-shrink-0">
-                            <span className="material-symbols-outlined text-base">swap_horiz</span>
-                          </button>
-                          <button onClick={() => handleRemoveItem(it.buildItemId)} title="Xóa"
-                            className="p-1.5 hover:bg-red-50 text-gray-300 hover:text-red-500 rounded-lg transition flex-shrink-0">
-                            <span className="material-symbols-outlined text-base">delete</span>
-                          </button>
-                        </div>
-                      ))}
+                        ))
+                      )}
                     </div>
 
                     {/* Action */}
                     <div className="flex-shrink-0">
                       {(multi || items.length === 0) && (
                         <button onClick={() => openSlot(slot)}
-                          className="px-5 py-2.5 rounded-xl text-[11px] font-bold uppercase tracking-widest bg-black text-white hover:bg-gray-800 transition shadow-sm">
+                          disabled={multi && slot === 'RAM' && isRamSlotFull}
+                          title={multi && slot === 'RAM' && isRamSlotFull ? 'Bo mạch chủ đã đầy slot RAM' : undefined}
+                          className="px-5 py-2.5 rounded-xl text-[11px] font-bold uppercase tracking-widest bg-black text-white hover:bg-gray-800 transition shadow-sm disabled:opacity-40 disabled:cursor-not-allowed">
                           {multi ? '+ Thêm' : 'Chọn'}
                         </button>
                       )}

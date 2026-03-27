@@ -1,7 +1,7 @@
 import React from 'react';
 
 interface PaginationProps {
-  currentPage: number;      // 0-indexed (theo Spring)
+  currentPage: number;
   totalPages: number;
   onPageChange: (page: number) => void;
   className?: string;
@@ -26,23 +26,27 @@ const Pagination: React.FC<PaginationProps> = ({ currentPage, totalPages, onPage
       <button
         onClick={() => onPageChange(currentPage - 1)}
         disabled={currentPage === 0}
-        className="p-2 rounded-lg text-gray-400 hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed transition"
+        className="p-2 rounded-lg transition disabled:opacity-30 disabled:cursor-not-allowed"
+        style={{ color: '#64748B' }}
+        onMouseEnter={e => { if (currentPage !== 0) (e.currentTarget as HTMLElement).style.background = '#e2e8f0'; }}
+        onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent'; }}
       >
         <span className="material-symbols-outlined text-lg">chevron_left</span>
       </button>
 
       {pages.map((p, idx) =>
         p === '...' ? (
-          <span key={`ellipsis-${idx}`} className="px-2 text-gray-400 text-sm">…</span>
+          <span key={`ellipsis-${idx}`} className="px-2 text-sm" style={{ color: '#64748B' }}>…</span>
         ) : (
           <button
             key={p}
             onClick={() => onPageChange(p as number)}
-            className={`w-9 h-9 rounded-lg text-sm font-bold transition ${
-              p === currentPage
-                ? 'bg-blue-600 text-white shadow-sm shadow-blue-600/30'
-                : 'text-gray-600 hover:bg-gray-100'
-            }`}
+            className="w-9 h-9 rounded-lg text-sm font-bold transition"
+            style={p === currentPage
+              ? { background: '#002B5B', color: '#fff' }
+              : { color: '#64748B' }}
+            onMouseEnter={e => { if (p !== currentPage) (e.currentTarget as HTMLElement).style.background = '#e2e8f0'; }}
+            onMouseLeave={e => { if (p !== currentPage) (e.currentTarget as HTMLElement).style.background = 'transparent'; }}
           >
             {(p as number) + 1}
           </button>
@@ -52,7 +56,10 @@ const Pagination: React.FC<PaginationProps> = ({ currentPage, totalPages, onPage
       <button
         onClick={() => onPageChange(currentPage + 1)}
         disabled={currentPage >= totalPages - 1}
-        className="p-2 rounded-lg text-gray-400 hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed transition"
+        className="p-2 rounded-lg transition disabled:opacity-30 disabled:cursor-not-allowed"
+        style={{ color: '#64748B' }}
+        onMouseEnter={e => { if (currentPage < totalPages - 1) (e.currentTarget as HTMLElement).style.background = '#e2e8f0'; }}
+        onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent'; }}
       >
         <span className="material-symbols-outlined text-lg">chevron_right</span>
       </button>

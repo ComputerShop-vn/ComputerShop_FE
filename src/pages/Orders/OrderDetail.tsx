@@ -11,13 +11,14 @@ import { showToast, showConfirm } from '../../components/ui/Toast';
 const fmt = (v: number) => new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(v);
 
 const statusLabel: Record<string, { label: string; color: string }> = {
-  PENDING:   { label: 'Chờ xác nhận', color: 'bg-yellow-100 text-yellow-700' },
-  CONFIRMED: { label: 'Đã xác nhận',  color: 'bg-blue-100 text-blue-700' },
-  DELIVERED: { label: 'Đang giao',    color: 'bg-purple-100 text-purple-700' },
-  COMPLETED: { label: 'Hoàn thành',   color: 'bg-green-100 text-green-700' },
-  CANCELLED: { label: 'Đã hủy',       color: 'bg-red-100 text-red-700' },
-  PAID:      { label: 'Đã thanh toán',color: 'bg-emerald-100 text-emerald-700' },
-  FAILED:    { label: 'Thất bại',     color: 'bg-gray-100 text-gray-500' },
+  PENDING:    { label: 'Chờ xác nhận', color: 'bg-yellow-100 text-yellow-700' },
+  CONFIRMED:  { label: 'Đã xác nhận',  color: 'bg-blue-100 text-blue-700' },
+  PROCESSING: { label: 'Đang xử lý',   color: 'bg-cyan-100 text-cyan-700' },
+  DELIVERED:  { label: 'Đang giao',    color: 'bg-purple-100 text-purple-700' },
+  COMPLETED:  { label: 'Hoàn thành',   color: 'bg-green-100 text-green-700' },
+  CANCELLED:  { label: 'Đã hủy',       color: 'bg-red-100 text-red-700' },
+  PAID:       { label: 'Đã thanh toán',color: 'bg-emerald-100 text-emerald-700' },
+  FAILED:     { label: 'Thất bại',     color: 'bg-gray-100 text-gray-500' },
 };
 
 const WARRANTY_STATUS: Record<WarrantyStatus, { label: string; color: string }> = {
@@ -41,6 +42,7 @@ const OrderDetail: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [cancelling, setCancelling] = useState(false);
   const [payingNext, setPayingNext] = useState(false);
+  const [retryingPayment, setRetryingPayment] = useState(false);
   const [error, setError] = useState('');
   const [warranties, setWarranties] = useState<WarrantyResponse[]>([]);
   const [expandedWarranty, setExpandedWarranty] = useState<number | null>(null);
@@ -93,6 +95,20 @@ const OrderDetail: React.FC = () => {
     }
   };
 
+  const handleRetryPayment = async () => {
+    if (!order) return;
+    setRetryingPayment(true);
+    try {
+      // Thử không truyền installmentNo cho FULL payment
+      const payment = await paymentService.createPayment(order.orderId, undefined, undefined);
+      if (!payment.paymentUrl) throw new Error('Không nhận được link thanh toán.');
+      paymentService.redirectToPayment(payment.paymentUrl);
+    } catch (err: any) {
+      showToast(err.message || 'Không thể tạo link thanh toán. Vui lòng thử lại.', 'error');
+      setRetryingPayment(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex justify-center items-center min-h-[40vh]">
@@ -115,6 +131,13 @@ const OrderDetail: React.FC = () => {
   const canCancel = ['PENDING', 'CONFIRMED'].includes(order.status);
   const isInstallmentOrder =
     order.paymentMode === 'INSTALLMENT' || order.paymentType === 'INSTALLMENT';
+
+  // Đơn VNPAY FULL chưa thanh toán → cho phép thanh toán lại
+  const isFullVnpay = order.paymentMethod === 'VNPAY' && !isInstallmentOrder;
+  const isUnpaidFull = isFullVnpay && (
+    !order.payments || order.payments.length === 0 ||
+    !order.payments.some(p => p.status === 'PAID')
+  ) && !['CANCELLED', 'COMPLETED'].includes(order.status);
 
   // Lấy thông tin giao hàng từ item đầu tiên nếu không có ở root
   const firstItem = order.items?.[0] as any;

@@ -35,15 +35,15 @@ export const COMPONENT_CATEGORY_NAMES: Record<ComponentType, string> = {
   CPU: 'CPU',
   MAINBOARD: 'Mainboard',
   RAM: 'RAM',
-  GPU: 'GPU',
+  GPU: 'VGA',
   STORAGE_PRIMARY: 'SSD',
   STORAGE_SECONDARY: 'HDD',
   PSU: 'PSU',
   CASE: 'Case',
-  COOLING: 'Cooling',
-  MONITOR: 'Monitor',
-  KEYBOARD: 'Keyboard',
-  MOUSE: 'Mouse',
+  COOLING: 'Tản nhiệt',
+  MONITOR: 'Màn hình',
+  KEYBOARD: 'Bàn phím',
+  MOUSE: 'Chuột',
 };
 
 export const COMPONENT_ICONS: Record<ComponentType, string> = {
@@ -118,8 +118,11 @@ export interface CompatibleVariantsRequest {
 
 export interface CompatibilityFilterHint {
   attributeName: string;
-  operator: string; // eq, lte, gte
-  value: string;
+  operator?: string;   // eq, lte, gte (field cũ, giữ để tương thích)
+  value?: string;      // field cũ
+  requiredValue?: string; // field BE thực tế trả về
+  comparison?: string;    // field BE thực tế trả về (eq, lte, gte)
+  ruleType?: string;
 }
 
 export interface CompatibleVariantsResponse {

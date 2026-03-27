@@ -4,6 +4,7 @@ import { blogService } from '../../api/services/blogService';
 import { BlogResponse, BlogCreationRequest, BlogUpdateRequest } from '../../api/types/blog';
 import { PagedResponse } from '../../api/types/common';
 import Pagination from '../../components/ui/Pagination';
+import { showToast, showConfirm } from '../../components/ui/Toast';
 
 const PAGE_SIZE = 10;
 
@@ -58,12 +59,13 @@ const AdminBlogs: React.FC = () => {
         content: formData.content.trim(),
       };
       await blogService.createBlog(request);
+      showToast('Thêm blog thành công', 'success');
       setShowAddModal(false);
       setFormData({ title: '', content: '' });
       fetchBlogs(0);
       setCurrentPage(0);
     } catch (err: any) {
-      alert(err.message || 'Failed to create blog');
+      showToast(err.message || 'Failed to create blog', 'error');
     }
   };
 
@@ -77,23 +79,26 @@ const AdminBlogs: React.FC = () => {
         content: formData.content.trim(),
       };
       await blogService.updateBlog(selectedBlog.blogId, request);
+      showToast('Cập nhật blog thành công', 'success');
       setShowEditModal(false);
       setSelectedBlog(null);
       setFormData({ title: '', content: '' });
       fetchBlogs(currentPage);
     } catch (err: any) {
-      alert(err.message || 'Failed to update blog');
+      showToast(err.message || 'Failed to update blog', 'error');
     }
   };
 
   const handleDelete = async (id: number) => {
-    if (!window.confirm('Bạn có chắc chắn muốn xóa blog này?')) return;
+    const ok = await showConfirm({ title: 'Xóa blog', message: 'Bạn có chắc chắn muốn xóa blog này?', confirmText: 'Xóa', danger: true });
+    if (!ok) return;
 
     try {
       await blogService.deleteBlog(id);
+      showToast('Xóa blog thành công', 'success');
       fetchBlogs(currentPage);
     } catch (err: any) {
-      alert(err.message || 'Failed to delete blog');
+      showToast(err.message || 'Failed to delete blog', 'error');
     }
   };
 

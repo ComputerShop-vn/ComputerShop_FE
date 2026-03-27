@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import AdminLayout from '../../components/layout/AdminLayout';
 import { brandService } from '../../api/services/brandService';
 import Pagination from '../../components/ui/Pagination';
+import { showToast, showConfirm } from '../../components/ui/Toast';
 import { BrandResponse, BrandCreationRequest, BrandUpdateRequest } from '../../api/types/brand';
 
 const AdminBrands: React.FC = () => {
@@ -68,11 +69,12 @@ const AdminBrands: React.FC = () => {
         brandName: formData.brandName.trim(),
       };
       await brandService.createBrand(request, formData.logo || undefined);
+      showToast('Thêm thương hiệu thành công', 'success');
       setShowAddModal(false);
       setFormData({ brandName: '', logo: null });
       fetchBrands(currentPage);
     } catch (err: any) {
-      alert(err.message || 'Failed to create brand');
+      showToast(err.message || 'Failed to create brand', 'error');
     }
   };
 
@@ -85,23 +87,26 @@ const AdminBrands: React.FC = () => {
         brandName: formData.brandName.trim(),
       };
       await brandService.updateBrand(selectedBrand.brandId, request, formData.logo || undefined);
+      showToast('Cập nhật thương hiệu thành công', 'success');
       setShowEditModal(false);
       setSelectedBrand(null);
       setFormData({ brandName: '', logo: null });
       fetchBrands(currentPage);
     } catch (err: any) {
-      alert(err.message || 'Failed to update brand');
+      showToast(err.message || 'Failed to update brand', 'error');
     }
   };
 
   const handleDelete = async (id: number) => {
-    if (!window.confirm('Bạn có chắc chắn muốn xóa thương hiệu này?')) return;
+    const ok = await showConfirm({ title: 'Xóa thương hiệu', message: 'Bạn có chắc chắn muốn xóa thương hiệu này?', confirmText: 'Xóa', danger: true });
+    if (!ok) return;
 
     try {
       await brandService.deleteBrand(id);
+      showToast('Xóa thương hiệu thành công', 'success');
       fetchBrands(currentPage);
     } catch (err: any) {
-      alert(err.message || 'Failed to delete brand');
+      showToast(err.message || 'Failed to delete brand', 'error');
     }
   };
 
