@@ -51,12 +51,7 @@ const AdminUsers: React.FC = () => {
   useEffect(() => { fetchUsers(currentPage); }, [currentPage]);
 
   const handleDelete = async (id: number) => {
-    const ok = await showConfirm({
-      title: 'Xóa người dùng',
-      message: 'Bạn có chắc chắn muốn xóa người dùng này? Thao tác này không thể hoàn tác.',
-      confirmText: 'Xóa ngay',
-      danger: true
-    });
+    const ok = await showConfirm({ title: 'Xóa người dùng', message: 'Bạn có chắc chắn muốn xóa người dùng này?', confirmText: 'Xóa', danger: true });
     if (!ok) return;
 
     try {

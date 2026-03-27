@@ -25,11 +25,7 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children, title, subtitle, ac
   );
 
   const handleLogout = async () => {
-    const ok = await showConfirm({
-      title: 'Đăng xuất',
-      message: 'Bạn có chắc chắn muốn đăng xuất khỏi hệ thống?',
-      confirmText: 'Đăng xuất ngay',
-    });
+    const ok = await showConfirm({ title: 'Đăng xuất', message: 'Bạn có chắc chắn muốn đăng xuất?', confirmText: 'Đăng xuất', danger: true });
     if (ok) {
       await logout();
       navigate('/login');
@@ -85,6 +81,7 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children, title, subtitle, ac
     { path: `${prefix}/installment-packages`, label: 'Gói Trả Góp', icon: 'credit_card' },
     { path: `${prefix}/warranties`, label: 'Bảo Hành', icon: 'verified_user' },
     { path: `${prefix}/reports`, label: 'Báo Cáo', icon: 'bar_chart' },
+    { path: `${prefix}/messages`, label: 'Tin Nhắn', icon: 'chat' },
   ] as const;
 
   type NavItem = typeof staffNavItems[number];

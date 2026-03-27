@@ -181,10 +181,20 @@ const Shop: React.FC = () => {
                 </div>
               </div>
 
+              {/* <<<<<<< HEAD
+              <div className="hidden lg:block p-5 rounded-2xl border border-gray-100 bg-white">
+                <h4 className="text-xs font-bold uppercase tracking-widest mb-2 text-gray-800">Hỗ trợ 24/7</h4>
+                <p className="text-xs leading-relaxed text-gray-500">Cần tư vấn cấu hình? Liên hệ ngay với đội ngũ chuyên gia.</p>
+                <button
+                  onClick={() => window.dispatchEvent(new CustomEvent('open-chat-with-staff', { detail: {} }))}
+                  className="mt-4 w-full py-2.5 rounded-xl text-[10px] font-bold uppercase tracking-widest transition border border-gray-200 text-gray-500 hover:border-black hover:text-black"
+======= */}
               <div className="hidden lg:block p-5 rounded-2xl" style={{ background: '#ffffff', border: '1px solid #e2e8f0' }}>
                 <h4 className="text-xs font-bold uppercase tracking-widest mb-2" style={{ color: '#002B5B' }}>Hỗ trợ 24/7</h4>
                 <p className="text-xs leading-relaxed" style={{ color: '#64748B' }}>Cần tư vấn cấu hình? Liên hệ ngay với đội ngũ chuyên gia.</p>
-                <button className="mt-4 w-full py-2.5 rounded-xl text-[10px] font-bold uppercase tracking-widest transition" style={{ border: '1px solid #002B5B', color: '#002B5B' }}
+                <button
+                  onClick={() => window.dispatchEvent(new CustomEvent('open-chat-with-staff', { detail: {} }))}
+                  className="mt-4 w-full py-2.5 rounded-xl text-[10px] font-bold uppercase tracking-widest transition" style={{ border: '1px solid #002B5B', color: '#002B5B' }}
                   onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = '#002B5B'; (e.currentTarget as HTMLElement).style.color = '#fff'; }}
                   onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent'; (e.currentTarget as HTMLElement).style.color = '#002B5B'; }}
                 >
@@ -200,7 +210,7 @@ const Shop: React.FC = () => {
               <h1 className="text-3xl font-light uppercase tracking-tight" style={{ color: '#f1f5f9' }}>
                 {activeCategoryName ? (<>Danh mục: <span className="font-bold" style={{ color: '#60a5fa' }}>{activeCategoryName}</span></>) :
                   searchFilter ? (<>Kết quả: <span className="font-bold" style={{ color: '#60a5fa' }}>"{searchFilter}"</span></>) :
-                  (<>Tất cả <span className="font-bold" style={{ color: '#60a5fa' }}>Sản phẩm</span></>)}
+                    (<>Tất cả <span className="font-bold" style={{ color: '#60a5fa' }}>Sản phẩm</span></>)}
               </h1>
               <p className="mt-1 text-[10px] font-bold uppercase tracking-[0.2em]" style={{ color: '#475569' }}>
                 Hiển thị {pagedData?.totalElements ?? products.length} sản phẩm

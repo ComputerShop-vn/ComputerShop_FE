@@ -33,8 +33,10 @@ const ProductDetail: React.FC = () => {
     setError('');
     productService.getProductById(Number(id))
       .then((data) => {
+        console.log('[ProductDetail] thumbnailUrl:', data.thumbnailUrl, 'imageUrls:', data.imageUrls);
         setProduct(data);
-        setActiveImage(data.thumbnailUrl || data.imageUrls?.[0] || '');
+        const firstImage = data.thumbnailUrl || data.imageUrls?.[0] || '';
+        setActiveImage(firstImage);
         if (data.variants?.length) setSelectedVariant(data.variants[0]);
       })
       .catch(() => setError('Không tìm thấy sản phẩm.'))
@@ -132,11 +134,11 @@ const ProductDetail: React.FC = () => {
   const discountRatio = hasDiscount ? product.discountedPrice! / product.basePrice : 1;
   const variantPrice = hasDiscount ? Math.round(variantBasePrice * discountRatio) : variantBasePrice;
 
-  // Collect all images
-  const images = [
-    ...(product.thumbnailUrl ? [product.thumbnailUrl] : []),
-    ...(product.imageUrls?.filter(u => u !== product.thumbnailUrl) ?? []),
-  ];
+  // Collect all images - ưu tiên imageUrls từ detail API, fallback về thumbnailUrl
+  const allImageUrls = product.imageUrls?.length
+    ? product.imageUrls
+    : product.thumbnailUrl ? [product.thumbnailUrl] : [];
+  const images = Array.from(new Set(allImageUrls));
 
   // Build specs from selected variant attributes
   const variantAttrs: Array<{ key: string; value: string }> = selectedVariant?.attributes
@@ -184,11 +186,11 @@ const ProductDetail: React.FC = () => {
               </span>
             )}
             <img
-              src={activeImage || product.thumbnailUrl || undefined}
+              src={activeImage || images[0]}
               alt={product.name}
               className="w-full h-full object-contain p-8 transition-transform duration-700 group-hover:scale-110"
               referrerPolicy="no-referrer"
-              onError={(e) => { (e.target as HTMLImageElement).src = 'https://via.placeholder.com/600x600?text=No+Image'; }}
+              onError={(e) => { (e.target as HTMLImageElement).src = '/placeholder.png'; }}
             />
             <div className="absolute inset-0 bg-black/0 group-hover:bg-black/5 transition-colors duration-300 flex items-center justify-center">
               <span className="material-symbols-outlined text-white opacity-0 group-hover:opacity-100 scale-50 group-hover:scale-100 transition-all duration-300 text-4xl">

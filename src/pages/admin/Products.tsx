@@ -107,14 +107,8 @@ const AdminProducts: React.FC = () => {
   });
 
   const handleDelete = async (id: number) => {
-    const ok = await showConfirm({
-      title: 'Xóa sản phẩm',
-      message: 'Bạn có chắc chắn muốn xóa sản phẩm này? Thao tác này không thể hoàn tác.',
-      confirmText: 'Xóa ngay',
-      danger: true
-    });
+    const ok = await showConfirm({ title: 'Xóa sản phẩm', message: 'Bạn có chắc chắn muốn xóa sản phẩm này?', confirmText: 'Xóa', danger: true });
     if (!ok) return;
-
     try {
       await productService.deleteProduct(id);
       showToast('Xóa sản phẩm thành công', 'success');
