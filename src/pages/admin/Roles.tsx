@@ -4,6 +4,7 @@ import { roleService } from '../../api/services/roleService';
 import Pagination from '../../components/ui/Pagination';
 import { showToast, showConfirm } from '../../components/ui/Toast';
 import { RoleResponse, RoleCreationRequest, RoleUpdateRequest } from '../../api/types/role';
+import { showConfirm } from '../../components/ui/Toast';
 
 const AdminRoles: React.FC = () => {
   const [roles, setRoles] = useState<RoleResponse[]>([]);
@@ -85,12 +86,7 @@ const AdminRoles: React.FC = () => {
   };
 
   const handleDelete = async (id: number) => {
-    const ok = await showConfirm({
-      title: 'Xóa role',
-      message: 'Bạn có chắc chắn muốn xóa vai trò này? Thao tác này có thể ảnh hưởng đến quyền truy cập của người dùng.',
-      confirmText: 'Xóa ngay',
-      danger: true
-    });
+    const ok = await showConfirm({ title: 'Xóa role', message: 'Bạn có chắc chắn muốn xóa role này?', confirmText: 'Xóa', danger: true });
     if (!ok) return;
 
     try {

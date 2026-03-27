@@ -25,11 +25,7 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children, title, subtitle, ac
   );
 
   const handleLogout = async () => {
-    const ok = await showConfirm({
-      title: 'Đăng xuất',
-      message: 'Bạn có chắc chắn muốn đăng xuất khỏi hệ thống?',
-      confirmText: 'Đăng xuất ngay',
-    });
+    const ok = await showConfirm({ title: 'Đăng xuất', message: 'Bạn có chắc chắn muốn đăng xuất?', confirmText: 'Đăng xuất', danger: true });
     if (ok) {
       await logout();
       navigate('/login');
