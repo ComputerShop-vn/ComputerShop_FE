@@ -144,22 +144,18 @@ const Shop: React.FC = () => {
                     const isActive = categoryFilter === String(parent.categoryId);
                     return (
                       <div key={parent.categoryId}>
-                        <div className="flex items-center gap-1">
-                          <button
-                            onClick={() => handleCategoryChange(parent.categoryId)}
-                            className="flex-1 px-3 py-2 text-sm font-medium rounded-lg transition-all text-left"
-                            style={isActive ? { background: 'rgba(0,43,91,0.1)', color: '#002B5B' } : { color: '#64748B' }}
-                            onMouseEnter={e => { if (!isActive) (e.currentTarget as HTMLElement).style.background = 'rgba(0,43,91,0.05)'; }}
-                            onMouseLeave={e => { if (!isActive) (e.currentTarget as HTMLElement).style.background = 'transparent'; }}
-                          >
-                            {parent.categoryName}
-                          </button>
+                        <button
+                          onClick={() => { handleCategoryChange(parent.categoryId); if (hasChildren) toggleExpand(parent.categoryId); }}
+                          className="w-full flex items-center justify-between px-3 py-2 text-sm font-medium rounded-lg transition-all text-left"
+                          style={isActive ? { background: 'rgba(0,43,91,0.1)', color: '#002B5B' } : { color: '#64748B' }}
+                          onMouseEnter={e => { if (!isActive) (e.currentTarget as HTMLElement).style.background = 'rgba(0,43,91,0.05)'; }}
+                          onMouseLeave={e => { if (!isActive) (e.currentTarget as HTMLElement).style.background = 'transparent'; }}
+                        >
+                          <span>{parent.categoryName}</span>
                           {hasChildren && (
-                            <button onClick={() => toggleExpand(parent.categoryId)} className="p-1.5 rounded-lg transition" style={{ color: '#64748B' }}>
-                              <span className={`material-symbols-outlined text-sm transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`}>expand_more</span>
-                            </button>
+                            <span className={`material-symbols-outlined text-sm transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`}>expand_more</span>
                           )}
-                        </div>
+                        </button>
                         {hasChildren && isExpanded && (
                           <div className="ml-4 mt-1 flex flex-col gap-1 pl-3 border-l" style={{ borderColor: 'rgba(0,43,91,0.15)' }}>
                             {parent.children!.map((child) => {
