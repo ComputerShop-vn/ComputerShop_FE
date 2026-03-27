@@ -175,7 +175,25 @@ const OrderDetail: React.FC = () => {
               </div>
               <div>
                 <p className="text-xs text-gray-500">Hình thức thanh toán</p>
-                <p className="text-sm font-bold text-gray-900">{order.paymentType}</p>
+                <p className="text-sm font-bold text-gray-900">
+                  {order.paymentMethod === 'COD' ? 'Tiền mặt (COD)' : 'VNPay'}
+                  {' · '}
+                  {order.paymentMode === 'INSTALLMENT' || order.paymentType === 'INSTALLMENT' ? 'Trả góp' : 'Đầy đủ'}
+                </p>
+              </div>
+              <div>
+                <p className="text-xs text-gray-500">Trạng thái thanh toán</p>
+                {(() => {
+                  const payments = order.payments || [];
+                  const allPaid = payments.length > 0 && payments.every(p => p.status === 'PAID');
+                  const anyPaid = payments.some(p => p.status === 'PAID');
+                  const anyOverdue = payments.some(p => p.status === 'OVERDUE');
+                  const paidCount = payments.filter(p => p.status === 'PAID').length;
+                  if (allPaid) return <span className="inline-block text-[10px] font-bold uppercase tracking-widest px-2 py-1 rounded-full bg-green-100 text-green-700">Đã thanh toán đủ</span>;
+                  if (anyOverdue) return <span className="inline-block text-[10px] font-bold uppercase tracking-widest px-2 py-1 rounded-full bg-red-100 text-red-700">Có kỳ quá hạn</span>;
+                  if (anyPaid) return <span className="inline-block text-[10px] font-bold uppercase tracking-widest px-2 py-1 rounded-full bg-amber-100 text-amber-700">Đã trả {paidCount}/{payments.length} kỳ</span>;
+                  return <span className="inline-block text-[10px] font-bold uppercase tracking-widest px-2 py-1 rounded-full bg-orange-100 text-orange-700">Chưa thanh toán</span>;
+                })()}
               </div>
               <div>
                 <p className="text-xs text-gray-500">Tổng tiền</p>
@@ -251,11 +269,13 @@ const OrderDetail: React.FC = () => {
           </table>
         </div>
 
-        {/* Payment Schedule (for INSTALLMENT) */}
-        {order.paymentType === 'INSTALLMENT' && order.payments && order.payments.length > 0 && (
+        {/* Payment Schedule */}
+        {order.payments && order.payments.length > 0 && (
           <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
             <div className="p-6 border-b border-gray-100">
-              <h3 className="text-sm font-black uppercase tracking-widest text-gray-400">Lịch thanh toán trả góp</h3>
+              <h3 className="text-sm font-black uppercase tracking-widest text-gray-400">
+                {order.paymentMode === 'INSTALLMENT' || order.paymentType === 'INSTALLMENT' ? 'Lịch thanh toán trả góp' : 'Lịch thanh toán'}
+              </h3>
             </div>
             <table className="w-full">
               <thead>

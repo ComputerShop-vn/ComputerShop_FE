@@ -70,7 +70,11 @@ const AdminOrders: React.FC = () => {
   };
 
   const formatDate = (d?: string) => d ? new Date(d).toLocaleDateString('vi-VN') : '-';
-  const filtered = filter === 'ALL' ? orders : orders.filter(o => o.paymentType === filter);
+  const filtered = filter === 'ALL'
+    ? orders
+    : filter === 'FULL'
+      ? orders.filter(o => o.paymentMode === 'FULL' || o.paymentMethod === 'COD' || o.paymentType === 'FULL' || o.paymentType === 'COD')
+      : orders.filter(o => o.paymentMode === 'INSTALLMENT' || o.paymentType === 'INSTALLMENT');
 
   return (
     <AdminLayout
@@ -90,7 +94,12 @@ const AdminOrders: React.FC = () => {
           >
             {f === 'ALL' ? 'Tất cả' : f === 'FULL' ? 'Thanh toán đủ' : 'Trả góp'}
             <span className="ml-1.5 opacity-70">
-              ({f === 'ALL' ? orders.length : orders.filter(o => o.paymentType === f).length})
+              ({f === 'ALL'
+                ? orders.length
+                : f === 'FULL'
+                  ? orders.filter(o => o.paymentMode === 'FULL' || o.paymentMethod === 'COD' || o.paymentType === 'FULL' || o.paymentType === 'COD').length
+                  : orders.filter(o => o.paymentMode === 'INSTALLMENT' || o.paymentType === 'INSTALLMENT').length
+              })
             </span>
           </button>
         ))}

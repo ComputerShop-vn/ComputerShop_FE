@@ -23,8 +23,10 @@ const PaymentCallback: React.FC = () => {
     const isFailedPath = location.pathname.includes('payment-failed');
 
     const orderIdFromPath = orderIdQuery ? Number(orderIdQuery) : null;
-    const installmentNo =
-      installmentNoQuery !== null && installmentNoQuery !== '' ? Number(installmentNoQuery) : undefined;
+    // installmentNo=0 nghĩa là FULL payment, truyền undefined để backend xử lý đúng
+    const installmentNoRaw = installmentNoQuery !== null && installmentNoQuery !== '' ? Number(installmentNoQuery) : undefined;
+    const installmentNo = installmentNoRaw === 0 ? undefined : installmentNoRaw;
+    const isFullPayment = installmentNoRaw === 0 || installmentNoRaw === undefined;
 
     // Nếu VNPay trả về responseCode trực tiếp trong URL, dùng luôn không cần poll
     const vnpSuccess = vnpResponseCode === '00';
@@ -75,8 +77,9 @@ const PaymentCallback: React.FC = () => {
             }
           }
           // Sau khi poll hết vẫn không thấy success/failed
-          // Coi như thành công nếu đang ở path success, thất bại nếu không
-          if (isSuccessPath) {
+          // FULL payment: VNPay đã redirect về đây nghĩa là user đã thanh toán xong
+          // IPN có thể chưa về kịp — coi là thành công
+          if (isFullPayment || isSuccessPath) {
             setStatus('success');
             setTimeout(() => navigate(`/orders/${orderIdFromPath}`, { replace: true }), 1500);
           } else {
@@ -84,7 +87,7 @@ const PaymentCallback: React.FC = () => {
             setTimeout(() => navigate(`/orders/${orderIdFromPath}`, { replace: true }), 3000);
           }
         } catch (err) {
-          if (isSuccessPath) {
+          if (isFullPayment || isSuccessPath) {
             setStatus('success');
             setTimeout(() => navigate(`/orders/${orderIdFromPath}`, { replace: true }), 1500);
           } else {

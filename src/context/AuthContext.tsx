@@ -27,30 +27,37 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     const loadUser = async () => {
       try {
-        if (authService.isAuthenticated()) {
-          const userInfo = await authService.getCurrentUser();
-          if (userInfo) {
-            setUser({
-              email: userInfo.email,
-              role: (userInfo.role?.toLowerCase() as 'admin' | 'staff' | 'user') || 'user',
-              name: userInfo.name || userInfo.email.split('@')[0],
-            });
-          } else {
-            // getCurrentUser trả null = token invalid, clear luôn
+        const token = localStorage.getItem('authToken');
+        if (!token) { setLoading(false); return; }
+
+        // Decode JWT locally trước để check expiry — không cần network
+        try {
+          const payload = JSON.parse(atob(token.split('.')[1]));
+          const now = Math.floor(Date.now() / 1000);
+          if (payload.exp && payload.exp < now) {
+            // Token hết hạn rõ ràng — xóa
             localStorage.removeItem('authToken');
             localStorage.removeItem('refreshToken');
+            setLoading(false);
+            return;
           }
-        }
-      } catch (error: any) {
-        console.error('Failed to load user:', error);
-        // Chỉ clear token nếu là lỗi 401/403 (token thực sự invalid)
-        // Không clear nếu là lỗi network (500, timeout...)
-        const code = error?.code;
-        if (code === 401 || code === 403 || code === 1006 || code === 1005) {
+          // Token còn hạn — set user từ local decode ngay, không chờ network
+          const rawRole = payload.scope || payload.role || '';
+          const roleStr = Array.isArray(rawRole) ? rawRole[0] : rawRole;
+          const cleanRole = roleStr.replace('ROLE_', '').toUpperCase();
+          let mappedRole: 'admin' | 'staff' | 'user' = 'user';
+          if (cleanRole === 'ADMIN') mappedRole = 'admin';
+          else if (cleanRole === 'STAFF') mappedRole = 'staff';
+          setUser({
+            email: payload.sub || payload.email || '',
+            role: mappedRole,
+            name: payload.name || payload.username || (payload.sub || '').split('@')[0],
+          });
+        } catch {
+          // Token malformed — xóa
           localStorage.removeItem('authToken');
           localStorage.removeItem('refreshToken');
         }
-        // Nếu lỗi network, giữ token để user không bị đăng xuất
       } finally {
         setLoading(false);
       }
