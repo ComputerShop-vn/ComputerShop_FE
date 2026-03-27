@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import AdminLayout from '../../components/layout/AdminLayout';
 import { roleService } from '../../api/services/roleService';
 import Pagination from '../../components/ui/Pagination';
+import { showToast, showConfirm } from '../../components/ui/Toast';
 import { RoleResponse, RoleCreationRequest, RoleUpdateRequest } from '../../api/types/role';
 
 const AdminRoles: React.FC = () => {
@@ -54,11 +55,12 @@ const AdminRoles: React.FC = () => {
         description: formData.description.trim() || undefined,
       };
       await roleService.createRole(request);
+      showToast('Thêm role thành công', 'success');
       setShowAddModal(false);
       setFormData({ name: '', description: '' });
       fetchRoles(currentPage);
     } catch (err: any) {
-      alert(err.message || 'Failed to create role');
+      showToast(err.message || 'Failed to create role', 'error');
     }
   };
 
@@ -72,23 +74,31 @@ const AdminRoles: React.FC = () => {
         description: formData.description.trim() || undefined,
       };
       await roleService.updateRole(selectedRole.roleId, request);
+      showToast('Cập nhật role thành công', 'success');
       setShowEditModal(false);
       setSelectedRole(null);
       setFormData({ name: '', description: '' });
       fetchRoles(currentPage);
     } catch (err: any) {
-      alert(err.message || 'Failed to update role');
+      showToast(err.message || 'Failed to update role', 'error');
     }
   };
 
   const handleDelete = async (id: number) => {
-    if (!window.confirm('Bạn có chắc chắn muốn xóa role này?')) return;
+    const ok = await showConfirm({
+      title: 'Xóa role',
+      message: 'Bạn có chắc chắn muốn xóa vai trò này? Thao tác này có thể ảnh hưởng đến quyền truy cập của người dùng.',
+      confirmText: 'Xóa ngay',
+      danger: true
+    });
+    if (!ok) return;
 
     try {
       await roleService.deleteRole(id);
+      showToast('Xóa role thành công', 'success');
       fetchRoles(currentPage);
     } catch (err: any) {
-      alert(err.message || 'Failed to delete role');
+      showToast(err.message || 'Failed to delete role', 'error');
     }
   };
 

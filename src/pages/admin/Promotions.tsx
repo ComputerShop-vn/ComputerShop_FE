@@ -10,6 +10,7 @@ import { CategoryResponse } from '../../api/types/category';
 import { BrandResponse } from '../../api/types/brand';
 import { PagedResponse } from '../../api/types/common';
 import Pagination from '../../components/ui/Pagination';
+import { showToast, showConfirm } from '../../components/ui/Toast';
 
 const PAGE_SIZE = 10;
 
@@ -77,20 +78,27 @@ const AdminPromotions: React.FC = () => {
   useEffect(() => { fetchPromotions(currentPage); }, [currentPage]);
 
   const handleDelete = async (id: number) => {
-    if (!window.confirm('Bạn có chắc chắn muốn xóa khuyến mãi này?')) return;
+    const ok = await showConfirm({
+      title: 'Xóa khuyến mãi',
+      message: 'Bạn có chắc chắn muốn xóa khuyến mãi này? Thao tác này không thể hoàn tác.',
+      confirmText: 'Xóa ngay',
+      danger: true
+    });
+    if (!ok) return;
 
     try {
       await promotionService.deletePromotion(id);
+      showToast('Xóa khuyến mãi thành công', 'success');
       fetchPromotions(currentPage);
     } catch (err: any) {
-      alert(err.message || 'Failed to delete promotion');
+      showToast(err.message || 'Failed to delete promotion', 'error');
     }
   };
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.promoCode.trim() || formData.discountPercent <= 0) {
-      alert('Vui lòng điền đầy đủ thông tin');
+      showToast('Vui lòng điền đầy đủ thông tin', 'warning');
       return;
     }
 
@@ -104,12 +112,13 @@ const AdminPromotions: React.FC = () => {
         isActive: formData.isActive,
       });
       
+      showToast('Thêm khuyến mãi thành công', 'success');
       setShowAddModal(false);
       resetForm();
       fetchPromotions(0);
       setCurrentPage(0);
     } catch (err: any) {
-      alert(err.message || 'Failed to create promotion');
+      showToast(err.message || 'Failed to create promotion', 'error');
     }
   };
 
@@ -127,12 +136,13 @@ const AdminPromotions: React.FC = () => {
         isActive: formData.isActive,
       });
       
+      showToast('Cập nhật khuyến mãi thành công', 'success');
       setShowEditModal(false);
       setSelectedPromotion(null);
       resetForm();
       fetchPromotions(currentPage);
     } catch (err: any) {
-      alert(err.message || 'Failed to update promotion');
+      showToast(err.message || 'Failed to update promotion', 'error');
     }
   };
 
@@ -216,7 +226,7 @@ const AdminPromotions: React.FC = () => {
     try {
       if (assignType === 'products') {
         if (assignData.selectedProductIds.length === 0) {
-          alert('Vui lòng chọn ít nhất 1 sản phẩm');
+          showToast('Vui lòng chọn ít nhất 1 sản phẩm', 'warning');
           return;
         }
         await promotionService.addPromotionToProducts({
@@ -226,7 +236,7 @@ const AdminPromotions: React.FC = () => {
       } else if (assignType === 'category') {
         const categoryId = parseInt(assignData.categoryId);
         if (isNaN(categoryId)) {
-          alert('Vui lòng chọn danh mục');
+          showToast('Vui lòng chọn danh mục', 'warning');
           return;
         }
         await promotionService.addPromotionToCategory({
@@ -236,7 +246,7 @@ const AdminPromotions: React.FC = () => {
       } else if (assignType === 'brand') {
         const brandId = parseInt(assignData.brandId);
         if (isNaN(brandId)) {
-          alert('Vui lòng chọn thương hiệu');
+          showToast('Vui lòng chọn thương hiệu', 'warning');
           return;
         }
         await promotionService.addPromotionToBrand({
@@ -247,9 +257,9 @@ const AdminPromotions: React.FC = () => {
       
       setShowAssignModal(false);
       setSelectedPromotion(null);
-      alert('Gán khuyến mãi thành công!');
+      showToast('Gán khuyến mãi thành công!', 'success');
     } catch (err: any) {
-      alert(err.message || 'Failed to assign promotion');
+      showToast(err.message || 'Failed to assign promotion', 'error');
     }
   };
 

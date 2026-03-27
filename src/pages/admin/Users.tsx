@@ -4,6 +4,7 @@ import { userService } from '../../api/services/userService';
 import { UserResponse } from '../../api/types/user';
 import { PagedResponse } from '../../api/types/common';
 import Pagination from '../../components/ui/Pagination';
+import { showToast, showConfirm } from '../../components/ui/Toast';
 
 const PAGE_SIZE = 10;
 
@@ -50,20 +51,27 @@ const AdminUsers: React.FC = () => {
   useEffect(() => { fetchUsers(currentPage); }, [currentPage]);
 
   const handleDelete = async (id: number) => {
-    if (!window.confirm('Bạn có chắc chắn muốn xóa người dùng này?')) return;
+    const ok = await showConfirm({
+      title: 'Xóa người dùng',
+      message: 'Bạn có chắc chắn muốn xóa người dùng này? Thao tác này không thể hoàn tác.',
+      confirmText: 'Xóa ngay',
+      danger: true
+    });
+    if (!ok) return;
 
     try {
       await userService.deleteUser(id);
+      showToast('Xóa người dùng thành công', 'success');
       fetchUsers(currentPage);
     } catch (err: any) {
-      alert(err.message || 'Failed to delete user');
+      showToast(err.message || 'Failed to delete user', 'error');
     }
   };
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.username.trim() || !formData.email.trim() || !formData.password.trim()) {
-      alert('Vui lòng điền đầy đủ thông tin bắt buộc');
+      showToast('Vui lòng điền đầy đủ thông tin bắt buộc', 'warning');
       return;
     }
 
@@ -75,12 +83,13 @@ const AdminUsers: React.FC = () => {
         phoneNumber: formData.phoneNumber.trim() || undefined,
       });
       
+      showToast('Thêm người dùng thành công', 'success');
       setShowAddModal(false);
       resetForm();
       fetchUsers(0);
       setCurrentPage(0);
     } catch (err: any) {
-      alert(err.message || 'Failed to create user');
+      showToast(err.message || 'Failed to create user', 'error');
     }
   };
 
@@ -108,18 +117,18 @@ const AdminUsers: React.FC = () => {
       }
       
       if (Object.keys(updateData).length === 0) {
-        alert('Không có thay đổi nào để cập nhật');
+        showToast('Không có thay đổi nào để cập nhật', 'warning');
         return;
       }
       
       await userService.updateUser(selectedUser.userId, updateData);
-      
+      showToast('Cập nhật người dùng thành công', 'success');
       setShowEditModal(false);
       setSelectedUser(null);
       resetForm();
       fetchUsers(currentPage);
     } catch (err: any) {
-      alert(err.message || 'Failed to update user');
+      showToast(err.message || 'Failed to update user', 'error');
     }
   };
 

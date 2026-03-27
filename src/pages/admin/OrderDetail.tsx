@@ -5,6 +5,7 @@ import { orderService } from '../../api/services/orderService';
 import { warrantyService } from '../../api/services/warrantyService';
 import { OrderResponse } from '../../api/types/order';
 import { WarrantyResponse, WarrantyStatus } from '../../api/types/warranty';
+import { showToast } from '../../components/ui/Toast';
 
 const WARRANTY_STATUS: Record<WarrantyStatus, { label: string; color: string }> = {
   ACTIVE:  { label: 'Còn hiệu lực', color: 'text-green-700 bg-green-50 border-green-200' },
@@ -53,9 +54,10 @@ const OrderDetail: React.FC = () => {
     if (!order) return;
     try {
       await orderService.updateOrderStatus(order.orderId, { status });
+      showToast('Cập nhật trạng thái đơn hàng thành công', 'success');
       fetchOrderDetail();
     } catch (err: any) {
-      alert(err.message || 'Failed to update order status');
+      showToast(err.message || 'Failed to update order status', 'error');
     }
   };
 

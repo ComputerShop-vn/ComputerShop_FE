@@ -7,6 +7,7 @@ import { orderService } from '../../api/services/orderService';
 import { paymentService } from '../../api/services/paymentService';
 import { installmentService } from '../../api/services/installmentService';
 import { InstallmentPackageResponse, InstallmentPreviewResponse } from '../../api/types/installment';
+import { showToast } from '../../components/ui/Toast';
 
 const fmt = (v: number) => new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(v);
 const fmtDate = (d: string) => new Date(d).toLocaleDateString('vi-VN');
@@ -63,13 +64,13 @@ const Checkout: React.FC = () => {
     e.preventDefault();
     
     if (!authUser) {
-      alert('Vui lòng đăng nhập để đặt hàng');
+      showToast('Vui lòng đăng nhập để đặt hàng', 'warning');
       navigate('/login');
       return;
     }
 
     if (!formData.fullName.trim() || !formData.phoneNumber.trim() || !formData.address.trim()) {
-      alert('Vui lòng điền đầy đủ thông tin giao hàng');
+      showToast('Vui lòng điền đầy đủ thông tin giao hàng', 'warning');
       return;
     }
 
@@ -107,7 +108,7 @@ const Checkout: React.FC = () => {
         } catch (paymentError: any) {
           console.error('Payment error:', paymentError);
           setIsProcessing(false);
-          alert(paymentError.message || 'Đơn hàng đã được tạo nhưng không thể tạo link thanh toán. Vui lòng vào trang đơn hàng để thanh toán lại.');
+          showToast(paymentError.message || 'Đơn hàng đã được tạo nhưng không thể tạo link thanh toán. Vui lòng vào trang đơn hàng để thanh toán lại.', 'error');
           navigate(`/orders/${order.orderId}`);
           return;
         }
@@ -115,14 +116,14 @@ const Checkout: React.FC = () => {
 
       // For COD, just show success and redirect
       setIsProcessing(false);
-      alert('Đơn hàng đã được đặt thành công! Cảm ơn bạn đã mua sắm.');
+      showToast('Đơn hàng đã được đặt thành công! Cảm ơn bạn đã mua sắm.', 'success');
       await clearCart();
       navigate('/orders');
       
     } catch (error: any) {
       setIsProcessing(false);
       console.error('Order error:', error);
-      alert(error.message || 'Không thể tạo đơn hàng. Vui lòng thử lại.');
+      showToast(error.message || 'Không thể tạo đơn hàng. Vui lòng thử lại.', 'error');
     }
   };
 

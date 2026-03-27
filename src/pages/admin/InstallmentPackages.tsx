@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import AdminLayout from '../../components/layout/AdminLayout';
 import { installmentService } from '../../api/services/installmentService';
 import Pagination from '../../components/ui/Pagination';
+import { showToast, showConfirm } from '../../components/ui/Toast';
 import { InstallmentPackageResponse, InstallmentPackageRequest } from '../../api/types/installment';
 
 const AdminInstallmentPackages: React.FC = () => {
@@ -65,11 +66,12 @@ const AdminInstallmentPackages: React.FC = () => {
         isActive: formData.isActive,
       };
       await installmentService.createPackage(request);
+      showToast('Thêm gói trả góp thành công', 'success');
       setShowAddModal(false);
       resetForm();
       fetchPackages(currentPage);
     } catch (err: any) {
-      alert(err.message || 'Không thể tạo gói trả góp');
+      showToast(err.message || 'Không thể tạo gói trả góp', 'error');
     }
   };
 
@@ -87,23 +89,31 @@ const AdminInstallmentPackages: React.FC = () => {
         isActive: formData.isActive,
       };
       await installmentService.updatePackage(selectedPackage.packageId, request);
+      showToast('Cập nhật gói trả góp thành công', 'success');
       setShowEditModal(false);
       setSelectedPackage(null);
       resetForm();
       fetchPackages(currentPage);
     } catch (err: any) {
-      alert(err.message || 'Không thể cập nhật gói trả góp');
+      showToast(err.message || 'Không thể cập nhật gói trả góp', 'error');
     }
   };
 
   const handleDelete = async (id: number) => {
-    if (!window.confirm('Bạn có chắc chắn muốn xóa gói trả góp này?')) return;
+    const ok = await showConfirm({
+      title: 'Xóa gói trả góp',
+      message: 'Bạn có chắc chắn muốn xóa gói trả góp này? Thao tác này không thể hoàn tác.',
+      confirmText: 'Xóa ngay',
+      danger: true
+    });
+    if (!ok) return;
 
     try {
       await installmentService.deletePackage(id);
+      showToast('Xóa gói trả góp thành công', 'success');
       fetchPackages(currentPage);
     } catch (err: any) {
-      alert(err.message || 'Failed to delete installment package');
+      showToast(err.message || 'Failed to delete installment package', 'error');
     }
   };
 

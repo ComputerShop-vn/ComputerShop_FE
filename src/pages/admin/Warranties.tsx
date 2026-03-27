@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import AdminLayout from '../../components/layout/AdminLayout';
 import { warrantyService } from '../../api/services/warrantyService';
 import { WarrantyResponse, ClaimResponse, ClaimStatus, SolutionType, WarrantyStatus } from '../../api/types/warranty';
+import { showToast } from '../../components/ui/Toast';
 
 const STATUS_LABEL: Record<WarrantyStatus, { label: string; color: string; bg: string }> = {
   ACTIVE:  { label: 'Còn hiệu lực', color: 'text-green-700', bg: 'bg-green-50 border-green-200' },
@@ -77,8 +78,9 @@ const Warranties: React.FC = () => {
       });
       setEditClaim(null);
       await refreshResults();
+      showToast('Cập nhật yêu cầu bảo hành thành công', 'success');
     } catch {
-      alert('Không thể cập nhật yêu cầu bảo hành.');
+      showToast('Không thể cập nhật yêu cầu bảo hành.', 'error');
     } finally {
       setSavingClaim(false);
     }
@@ -90,8 +92,9 @@ const Warranties: React.FC = () => {
       await warrantyService.updateStatus(id, { status: newWarrantyStatus });
       setEditWarrantyId(null);
       await refreshResults();
+      showToast('Cập nhật trạng thái bảo hành thành công', 'success');
     } catch {
-      alert('Không thể cập nhật trạng thái bảo hành.');
+      showToast('Không thể cập nhật trạng thái bảo hành.', 'error');
     } finally {
       setSavingWarranty(false);
     }

@@ -5,6 +5,7 @@ import { orderService } from '../../api/services/orderService';
 import { OrderResponse } from '../../api/types/order';
 import { PagedResponse } from '../../api/types/common';
 import Pagination from '../../components/ui/Pagination';
+import { showToast } from '../../components/ui/Toast';
 
 const fmt = (v: number) => new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(v);
 
@@ -63,9 +64,10 @@ const AdminOrders: React.FC = () => {
   const updateStatus = async (orderId: number, status: string) => {
     try {
       await orderService.updateOrderStatus(orderId, { status });
+      showToast('Cập nhật trạng thái đơn hàng thành công', 'success');
       fetchOrders(currentPage);
     } catch (err: any) {
-      alert(err.message || 'Failed to update order status');
+      showToast(err.message || 'Failed to update order status', 'error');
     }
   };
 
