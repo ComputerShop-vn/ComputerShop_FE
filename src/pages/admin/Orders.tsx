@@ -181,8 +181,6 @@ const AdminOrders: React.FC = () => {
                         <option value="DELIVERED">Đang giao</option>
                         <option value="COMPLETED">Hoàn thành</option>
                         <option value="CANCELLED">Đã hủy</option>
-                        <option value="PAID">Đã thanh toán</option>
-                        <option value="FAILED">Thất bại</option>
                       </select>
                     </td>
                     <td className="p-4 text-right">
