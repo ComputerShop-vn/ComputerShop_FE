@@ -25,6 +25,7 @@ const ProductDetail: React.FC = () => {
   const [selectedVariant, setSelectedVariant] = useState<ProductVariantResponse | null>(null);
   const [activeTab, setActiveTab] = useState<'specs' | 'desc' | 'reviews'>('specs');
   const [activeImage, setActiveImage] = useState<string>('');
+  const [showLightbox, setShowLightbox] = useState(false);
 
   useEffect(() => {
     if (!id) return;
@@ -33,7 +34,7 @@ const ProductDetail: React.FC = () => {
     productService.getProductById(Number(id))
       .then((data) => {
         setProduct(data);
-        setActiveImage(data.thumbnailUrl || '');
+        setActiveImage(data.thumbnailUrl || data.imageUrls?.[0] || '');
         if (data.variants?.length) setSelectedVariant(data.variants[0]);
       })
       .catch(() => setError('Không tìm thấy sản phẩm.'))
@@ -161,33 +162,72 @@ const ProductDetail: React.FC = () => {
         {/* Left: Images */}
         <div className="flex flex-col-reverse lg:flex-row gap-4">
           {images.length > 1 && (
-            <div className="flex lg:flex-col gap-3 overflow-x-auto no-scrollbar">
+            <div className="flex lg:flex-col gap-3 overflow-x-auto no-scrollbar pb-2 lg:pb-0">
               {images.map((img, i) => (
                 <button
                   key={i}
                   onClick={() => setActiveImage(img)}
-                  className={`relative h-20 w-20 flex-shrink-0 border-2 transition-all rounded-lg overflow-hidden ${activeImage === img ? 'border-black' : 'border-transparent hover:border-gray-200'}`}
+                  className={`relative h-20 w-20 flex-shrink-0 border-2 transition-all duration-300 rounded-xl overflow-hidden ${activeImage === img ? 'border-black ring-2 ring-black/5' : 'border-transparent hover:border-gray-200'}`}
                 >
-                  <img src={img} alt="" className="w-full h-full object-contain p-1" referrerPolicy="no-referrer" />
+                  <img src={img} alt="" className="w-full h-full object-contain p-2" referrerPolicy="no-referrer" />
                 </button>
               ))}
             </div>
           )}
-          <div className="w-full aspect-square bg-gray-50 flex items-center justify-center relative group overflow-hidden rounded-2xl">
+          <div 
+            className="w-full aspect-square bg-white border border-gray-100 flex items-center justify-center relative group overflow-hidden rounded-3xl cursor-zoom-in"
+            onClick={() => setShowLightbox(true)}
+          >
             {hasDiscount && (
-              <span className="absolute top-4 left-4 z-10 bg-red-600 text-white text-[10px] font-bold px-3 py-1 uppercase tracking-widest rounded">
+              <span className="absolute top-6 left-6 z-10 bg-red-600 text-white text-[10px] font-bold px-3 py-1.5 uppercase tracking-widest rounded-full shadow-lg">
                 -{Math.round((1 - product.discountedPrice! / product.basePrice) * 100)}%
               </span>
             )}
             <img
               src={activeImage || product.thumbnailUrl || undefined}
               alt={product.name}
-              className="w-full h-full object-contain p-12 transition-transform duration-700 group-hover:scale-110 mix-blend-multiply"
+              className="w-full h-full object-contain p-8 transition-transform duration-700 group-hover:scale-110"
               referrerPolicy="no-referrer"
-              onError={(e) => { (e.target as HTMLImageElement).src = 'https://via.placeholder.com/400x400?text=No+Image'; }}
+              onError={(e) => { (e.target as HTMLImageElement).src = 'https://via.placeholder.com/600x600?text=No+Image'; }}
             />
+            <div className="absolute inset-0 bg-black/0 group-hover:bg-black/5 transition-colors duration-300 flex items-center justify-center">
+              <span className="material-symbols-outlined text-white opacity-0 group-hover:opacity-100 scale-50 group-hover:scale-100 transition-all duration-300 text-4xl">
+                zoom_in
+              </span>
+            </div>
           </div>
         </div>
+
+        {/* Lightbox Modal */}
+        {showLightbox && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/95 backdrop-blur-sm p-4 md:p-10 animate-in fade-in duration-300" onClick={() => setShowLightbox(false)}>
+            <button className="absolute top-6 right-6 text-white/70 hover:text-white transition-colors" onClick={() => setShowLightbox(false)}>
+              <span className="material-symbols-outlined text-4xl">close</span>
+            </button>
+            <div className="relative w-full h-full flex items-center justify-center" onClick={e => e.stopPropagation()}>
+              <img 
+                src={activeImage || product.thumbnailUrl || undefined} 
+                alt={product.name} 
+                className="max-w-full max-h-full object-contain animate-in zoom-in-95 duration-300"
+                referrerPolicy="no-referrer"
+              />
+              
+              {images.length > 1 && (
+                <div className="absolute bottom-0 left-0 right-0 py-6 overflow-x-auto no-scrollbar flex justify-center gap-3">
+                  {images.map((img, i) => (
+                    <button
+                      key={i}
+                      onClick={() => setActiveImage(img)}
+                      className={`h-16 w-16 rounded-lg border-2 transition-all overflow-hidden flex-shrink-0 ${activeImage === img ? 'border-white scale-110' : 'border-white/20 hover:border-white/50'}`}
+                    >
+                      <img src={img} alt="" className="w-full h-full object-contain p-1" referrerPolicy="no-referrer" />
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
 
         {/* Right: Info */}
         <div className="mt-10 lg:mt-0">
