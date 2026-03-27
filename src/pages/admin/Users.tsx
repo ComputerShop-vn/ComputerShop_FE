@@ -155,8 +155,11 @@ const AdminUsers: React.FC = () => {
   };
 
   const getRoleDisplay = (role?: string) => {
-    if (!role) return 'USER';
-    return role.toUpperCase();
+    const r = role?.toUpperCase();
+    if (r === 'ADMIN') return 'Quản trị viên';
+    if (r === 'STAFF') return 'Nhân viên';
+    if (r === 'MEMBER') return 'Thành viên';
+    return role || 'Người dùng';
   };
 
   const getRoleBadgeColor = (role?: string) => {
@@ -164,6 +167,13 @@ const AdminUsers: React.FC = () => {
     if (r === 'ADMIN') return 'bg-red-100 text-red-600';
     if (r === 'STAFF') return 'bg-blue-100 text-blue-600';
     return 'bg-gray-100 text-gray-600';
+  };
+
+  const getStatusDisplay = (status?: string) => {
+    const s = status?.toUpperCase();
+    if (s === 'ACTIVE') return 'Hoạt động';
+    if (s === 'INACTIVE') return 'Đã khóa';
+    return status || 'Không rõ';
   };
 
   const getStatusBadgeColor = (status?: string) => {
@@ -237,7 +247,7 @@ const AdminUsers: React.FC = () => {
                     </td>
                     <td className="px-6 py-4">
                       <span className={`inline-flex px-2 py-1 text-[10px] font-bold uppercase tracking-widest rounded ${getStatusBadgeColor(user.status)}`}>
-                        {user.status?.toUpperCase() || 'UNKNOWN'}
+                        {getStatusDisplay(user.status)}
                       </span>
                     </td>
                     <td className="px-6 py-4">

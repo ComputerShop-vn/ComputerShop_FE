@@ -299,7 +299,7 @@ const Header: React.FC<HeaderProps> = ({ cartCount }) => {
                     {user?.name}
                   </span>
                   <span className="text-[9px] text-gray-400 uppercase font-bold">
-                    {user?.role}
+                    {user?.role === 'admin' ? 'Quản trị viên' : user?.role === 'staff' ? 'Nhân viên' : 'Thành viên'}
                   </span>
                 </div>
               </button>

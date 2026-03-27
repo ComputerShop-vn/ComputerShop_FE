@@ -105,7 +105,7 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children, title, subtitle, ac
             <div className="min-w-0">
               <p className="text-xs font-bold text-gray-800 truncate">{user?.name}</p>
               <span className={`text-[9px] font-bold uppercase tracking-widest px-1.5 py-0.5 rounded ${isAdmin ? 'bg-red-100 text-red-600' : 'bg-blue-100 text-blue-600'}`}>
-                {user?.role}
+                {isAdmin ? 'Quản trị viên' : 'Nhân viên'}
               </span>
             </div>
           </div>

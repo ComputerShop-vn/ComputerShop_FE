@@ -117,7 +117,13 @@ const Profile: React.FC = () => {
             <p className="text-lg font-bold text-gray-900">{profile?.username}</p>
             <p className="text-sm text-gray-400 mt-1">{profile?.email}</p>
             <span className={`inline-block mt-3 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest ${getRoleBadge(profile?.roleName || profile?.role)}`}>
-              {(profile?.roleName || profile?.role || 'member').toUpperCase()}
+              {(() => {
+                const r = (profile?.roleName || profile?.role || '').toUpperCase();
+                if (r === 'ADMIN') return 'Quản trị viên';
+                if (r === 'STAFF') return 'Nhân viên';
+                if (r === 'MEMBER') return 'Thành viên';
+                return r || 'Thành viên';
+              })()}
             </span>
 
             <div className="mt-6 pt-6 border-t border-gray-50 space-y-3 text-left">
