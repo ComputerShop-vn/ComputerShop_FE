@@ -9,6 +9,7 @@ import { installmentService } from '../../api/services/installmentService';
 import { InstallmentPackageResponse, InstallmentPreviewResponse } from '../../api/types/installment';
 import { showToast } from '../../components/ui/Toast';
 
+
 const fmt = (v: number) => new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(v);
 const fmtDate = (d: string) => new Date(d).toLocaleDateString('vi-VN');
 
@@ -109,6 +110,7 @@ const Checkout: React.FC = () => {
           console.error('Payment error:', paymentError);
           setIsProcessing(false);
           showToast(paymentError.message || 'Đơn hàng đã được tạo nhưng không thể tạo link thanh toán. Vui lòng vào trang đơn hàng để thanh toán lại.', 'error');
+          showToast(paymentError.message || 'Đơn hàng đã tạo nhưng không thể tạo link thanh toán.', 'error');
           navigate(`/orders/${order.orderId}`);
           return;
         }
@@ -117,6 +119,7 @@ const Checkout: React.FC = () => {
       // For COD, just show success and redirect
       setIsProcessing(false);
       showToast('Đơn hàng đã được đặt thành công! Cảm ơn bạn đã mua sắm.', 'success');
+      showToast('Đặt hàng thành công! Cảm ơn bạn đã mua sắm.', 'success');
       await clearCart();
       navigate('/orders');
       

@@ -65,6 +65,7 @@ const OrderDetail: React.FC = () => {
     switch (status.toUpperCase()) {
       case 'PENDING': return 'bg-orange-100 text-orange-600';
       case 'CONFIRMED': return 'bg-blue-100 text-blue-600';
+      case 'PROCESSING': return 'bg-cyan-100 text-cyan-700';
       case 'DELIVERED': return 'bg-indigo-100 text-indigo-600';
       case 'COMPLETED': return 'bg-green-100 text-green-600';
       case 'CANCELLED': return 'bg-red-100 text-red-600';
@@ -79,7 +80,18 @@ const OrderDetail: React.FC = () => {
       case 'PAID': return 'bg-green-100 text-green-600';
       case 'UNPAID': return 'bg-orange-100 text-orange-600';
       case 'OVERDUE': return 'bg-red-100 text-red-600';
+      case 'FAILED': return 'bg-gray-100 text-gray-500';
       default: return 'bg-gray-100 text-gray-600';
+    }
+  };
+
+  const getPaymentStatusLabel = (status: string) => {
+    switch (status.toUpperCase()) {
+      case 'PAID': return 'Đã thanh toán';
+      case 'UNPAID': return 'Chưa thanh toán';
+      case 'OVERDUE': return 'Quá hạn';
+      case 'FAILED': return 'Thất bại';
+      default: return status;
     }
   };
 
@@ -141,11 +153,10 @@ const OrderDetail: React.FC = () => {
             >
               <option value="PENDING">Chờ xác nhận</option>
               <option value="CONFIRMED">Đã xác nhận</option>
+              <option value="PROCESSING">Đang xử lý</option>
               <option value="DELIVERED">Đang giao</option>
               <option value="COMPLETED">Hoàn thành</option>
               <option value="CANCELLED">Đã hủy</option>
-              <option value="PAID">Đã thanh toán</option>
-              <option value="FAILED">Thất bại</option>
             </select>
           </div>
         </div>
@@ -297,7 +308,7 @@ const OrderDetail: React.FC = () => {
                     <td className="p-4 text-sm font-black text-gray-900 text-right">{formatCurrency(payment.amount)}</td>
                     <td className="p-4">
                       <span className={`text-[9px] font-black uppercase tracking-widest px-2 py-1 rounded-full ${getPaymentStatusColor(payment.status)}`}>
-                        {payment.status}
+                        {getPaymentStatusLabel(payment.status)}
                       </span>
                     </td>
                     <td className="p-4 text-sm text-gray-600">{formatDate(payment.paidDate)}</td>
