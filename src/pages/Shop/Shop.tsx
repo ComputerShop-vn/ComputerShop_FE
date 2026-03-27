@@ -179,7 +179,10 @@ const Shop: React.FC = () => {
               <div className="hidden lg:block p-5 rounded-2xl border border-gray-100 bg-white">
                 <h4 className="text-xs font-bold uppercase tracking-widest mb-2 text-gray-800">Hỗ trợ 24/7</h4>
                 <p className="text-xs leading-relaxed text-gray-500">Cần tư vấn cấu hình? Liên hệ ngay với đội ngũ chuyên gia.</p>
-                <button className="mt-4 w-full py-2.5 rounded-xl text-[10px] font-bold uppercase tracking-widest transition border border-gray-200 text-gray-500 hover:border-black hover:text-black">
+                <button
+                  onClick={() => window.dispatchEvent(new CustomEvent('open-chat-with-staff', { detail: {} }))}
+                  className="mt-4 w-full py-2.5 rounded-xl text-[10px] font-bold uppercase tracking-widest transition border border-gray-200 text-gray-500 hover:border-black hover:text-black"
+                >
                   Liên hệ ngay
                 </button>
               </div>

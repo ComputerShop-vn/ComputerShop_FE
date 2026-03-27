@@ -17,6 +17,7 @@ import AdminPromotions from './src/pages/admin/Promotions';
 import AdminAttributes from './src/pages/admin/Attributes';
 import AdminBlogs from './src/pages/admin/Blogs';
 import AdminInstallmentPackages from './src/pages/admin/InstallmentPackages';
+import StaffMessages from './src/pages/admin/Messages';
 import Login from './src/pages/auth/Login';
 import Register from './src/pages/auth/Register';
 import OtpVerification from './src/pages/auth/OtpVerification';
@@ -24,7 +25,7 @@ import ForgotPassword from './src/pages/auth/ForgotPassword';
 import ResetPassword from './src/pages/auth/ResetPassword';
 import BuildPC from './src/pages/BuildPC';
 import ScrollToTop from './src/components/ScrollToTop';
-import { AuthProvider } from './src/context/AuthContext';
+import { AuthProvider, useAuth } from './src/context/AuthContext';
 import { CartProvider, useCart } from './src/context/CartContext';
 import { CompareProvider } from './src/context/CompareContext';
 import CompareBar from './src/components/ui/CompareBar';
@@ -40,6 +41,8 @@ import AdminWarranties from './src/pages/admin/Warranties';
 import AdminReports from './src/pages/admin/Reports';
 import PaymentCallback from './src/pages/PaymentCallback';
 import Profile from './src/pages/Profile/Profile';
+import ChatWidget from './src/components/chat/ChatWidget';
+import { useCurrentUserId } from './src/hooks/useCurrentUserId';
 
 const App: React.FC = () => {
   return (
@@ -67,6 +70,7 @@ const App: React.FC = () => {
               <Route path="/admin/users" element={<AdminUsers />} />
               <Route path="/admin/warranties" element={<AdminWarranties />} />
               <Route path="/admin/reports" element={<AdminReports />} />
+              <Route path="/admin/messages" element={<StaffMessages />} />
 
               {/* Staff routes - same pages, different prefix */}
               <Route path="/staff" element={<Dashboard />} />
@@ -81,6 +85,7 @@ const App: React.FC = () => {
               <Route path="/staff/blogs" element={<AdminBlogs />} />
               <Route path="/staff/warranties" element={<AdminWarranties />} />
               <Route path="/staff/reports" element={<AdminReports />} />
+              <Route path="/staff/messages" element={<StaffMessages />} />
               
               {/* Auth routes */}
               <Route path="/login" element={<Login />} />
@@ -114,6 +119,7 @@ const App: React.FC = () => {
                     </Routes>
                   </main>
                   <Footer />
+                  <MemberChatWidget />
                 </>
               } />
             </Routes>
@@ -130,6 +136,15 @@ const App: React.FC = () => {
 const HeaderWithCart: React.FC = () => {
   const { totalItems } = useCart();
   return <Header cartCount={totalItems} />;
+};
+
+// Chat widget only for authenticated members (not admin/staff)
+const MemberChatWidget: React.FC = () => {
+  const { isAuthenticated, user, loading } = useAuth();
+  const currentUserId = useCurrentUserId();
+  if (loading || !isAuthenticated || !user || user.role === 'admin' || user.role === 'staff') return null;
+  if (!currentUserId) return null;
+  return <ChatWidget currentUserId={currentUserId} />;
 };
 
 export default App;
