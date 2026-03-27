@@ -304,9 +304,8 @@ const BuildPC: React.FC = () => {
       await fetchMyBuilds();
 
       if (orderForm.paymentMethod === 'VNPAY') {
-        // Với FULL payment: installmentNo = 0 (theo API doc, installmentNo=0 cho FULL)
-        // Với INSTALLMENT: installmentNo = 1 (kỳ đầu tiên - down payment)
-        const installmentNo = orderForm.paymentMode === 'INSTALLMENT' ? 0 : undefined;
+        // installmentNo = 0 cho cả FULL và INSTALLMENT (down payment)
+        const installmentNo = 0;
         const payment = await paymentService.createPayment(order.orderId, undefined, installmentNo);
         if (!payment.paymentUrl) throw new Error('Không nhận được link thanh toán.');
         paymentService.redirectToPayment(payment.paymentUrl);
