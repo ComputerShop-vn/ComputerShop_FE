@@ -2,6 +2,7 @@
 import React, { useState } from 'react';
 import { Link, useLocation, Navigate, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import { showConfirm } from '../ui/Toast';
 
 interface AdminLayoutProps {
   children: React.ReactNode;
@@ -24,7 +25,8 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children, title, subtitle, ac
   );
 
   const handleLogout = async () => {
-    if (window.confirm('Bạn có chắc chắn muốn đăng xuất?')) {
+    const ok = await showConfirm({ title: 'Đăng xuất', message: 'Bạn có chắc chắn muốn đăng xuất?', confirmText: 'Đăng xuất', danger: true });
+    if (ok) {
       await logout();
       navigate('/login');
     }

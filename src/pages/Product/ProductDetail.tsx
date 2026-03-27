@@ -32,8 +32,11 @@ const ProductDetail: React.FC = () => {
     setError('');
     productService.getProductById(Number(id))
       .then((data) => {
+        console.log('[ProductDetail] thumbnailUrl:', data.thumbnailUrl, 'imageUrls:', data.imageUrls);
         setProduct(data);
-        setActiveImage(data.thumbnailUrl || '');
+        // Ưu tiên thumbnailUrl, fallback về ảnh đầu tiên trong imageUrls
+        const firstImage = data.thumbnailUrl || data.imageUrls?.[0] || '';
+        setActiveImage(firstImage);
         if (data.variants?.length) setSelectedVariant(data.variants[0]);
       })
       .catch(() => setError('Không tìm thấy sản phẩm.'))
@@ -131,11 +134,11 @@ const ProductDetail: React.FC = () => {
   const discountRatio = hasDiscount ? product.discountedPrice! / product.basePrice : 1;
   const variantPrice = hasDiscount ? Math.round(variantBasePrice * discountRatio) : variantBasePrice;
 
-  // Collect all images
-  const images = [
-    ...(product.thumbnailUrl ? [product.thumbnailUrl] : []),
-    ...(product.imageUrls?.filter(u => u !== product.thumbnailUrl) ?? []),
-  ];
+  // Collect all images - ưu tiên imageUrls từ detail API, fallback về thumbnailUrl
+  const allImageUrls = product.imageUrls?.length
+    ? product.imageUrls
+    : product.thumbnailUrl ? [product.thumbnailUrl] : [];
+  const images = Array.from(new Set(allImageUrls));
 
   // Build specs from selected variant attributes
   const variantAttrs: Array<{ key: string; value: string }> = selectedVariant?.attributes
@@ -159,34 +162,37 @@ const ProductDetail: React.FC = () => {
 
       <div className="lg:grid lg:grid-cols-2 lg:gap-x-16 lg:items-start">
         {/* Left: Images */}
-        <div className="flex flex-col-reverse lg:flex-row gap-4">
-          {images.length > 1 && (
-            <div className="flex lg:flex-col gap-3 overflow-x-auto no-scrollbar">
-              {images.map((img, i) => (
-                <button
-                  key={i}
-                  onClick={() => setActiveImage(img)}
-                  className={`relative h-20 w-20 flex-shrink-0 border-2 transition-all rounded-lg overflow-hidden ${activeImage === img ? 'border-black' : 'border-transparent hover:border-gray-200'}`}
-                >
-                  <img src={img} alt="" className="w-full h-full object-contain p-1" referrerPolicy="no-referrer" />
-                </button>
-              ))}
-            </div>
-          )}
-          <div className="w-full aspect-square bg-gray-50 flex items-center justify-center relative group overflow-hidden rounded-2xl">
+        <div className="flex flex-col gap-4">
+          {/* Main image */}
+          <div className="w-full bg-white border border-gray-100 rounded-2xl shadow-sm relative group overflow-hidden" style={{ paddingBottom: '100%' }}>
             {hasDiscount && (
               <span className="absolute top-4 left-4 z-10 bg-red-600 text-white text-[10px] font-bold px-3 py-1 uppercase tracking-widest rounded">
                 -{Math.round((1 - product.discountedPrice! / product.basePrice) * 100)}%
               </span>
             )}
             <img
-              src={activeImage || product.thumbnailUrl || undefined}
+              src={activeImage || images[0]}
               alt={product.name}
-              className="w-full h-full object-contain p-12 transition-transform duration-700 group-hover:scale-110 mix-blend-multiply"
-              referrerPolicy="no-referrer"
-              onError={(e) => { (e.target as HTMLImageElement).src = 'https://via.placeholder.com/400x400?text=No+Image'; }}
+              className="absolute inset-0 w-full h-full object-contain p-8 transition-transform duration-500 group-hover:scale-105"
+              onError={(e) => { (e.target as HTMLImageElement).src = '/placeholder.png'; }}
             />
           </div>
+          {/* Thumbnails */}
+          {images.length > 1 && (
+            <div className="flex gap-3 overflow-x-auto pb-1">
+              {images.map((img, i) => (
+                <button
+                  key={i}
+                  onClick={() => setActiveImage(img)}
+                  className={`flex-shrink-0 border-2 rounded-xl overflow-hidden bg-white transition-all ${activeImage === img ? 'border-black shadow-md' : 'border-gray-100 hover:border-gray-300'}`}
+                  style={{ width: 80, height: 80 }}
+                >
+                  <img src={img} alt="" className="w-full h-full object-contain p-1.5"
+                    onError={(e) => { (e.target as HTMLImageElement).src = '/placeholder.png'; }} />
+                </button>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Right: Info */}

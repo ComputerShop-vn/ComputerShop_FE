@@ -305,7 +305,7 @@ const Warranties: React.FC = () => {
                   ) : (
                     <div className="space-y-4">
                       {w.claims.map((c: ClaimResponse) => {
-                        const cs = CLAIM_STATUS_LABEL[c.status];
+                        const cs = CLAIM_STATUS_LABEL[c.status] ?? { label: c.status, color: 'text-gray-500 bg-gray-50 border-gray-200' };
                         const isEditing = editClaim?.claimId === c.claimId;
 
                         return (

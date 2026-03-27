@@ -77,7 +77,8 @@ const AdminPromotions: React.FC = () => {
   useEffect(() => { fetchPromotions(currentPage); }, [currentPage]);
 
   const handleDelete = async (id: number) => {
-    if (!window.confirm('Bạn có chắc chắn muốn xóa khuyến mãi này?')) return;
+    const ok = await showConfirm({ title: 'Xóa khuyến mãi', message: 'Bạn có chắc chắn muốn xóa khuyến mãi này?', confirmText: 'Xóa', danger: true });
+    if (!ok) return;
 
     try {
       await promotionService.deletePromotion(id);
@@ -435,12 +436,20 @@ const AdminPromotions: React.FC = () => {
               <div>
                 <label className="block text-sm font-bold text-gray-700 mb-2">Phần trăm giảm giá (%) *</label>
                 <input
-                  type="number"
-                  value={formData.discountPercent}
-                  onChange={(e) => setFormData({ ...formData, discountPercent: Number(e.target.value) })}
+                  type="text"
+                  inputMode="numeric"
+                  value={formData.discountPercent === 0 ? '' : formData.discountPercent}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    if (val === '' || val === '-') {
+                      setFormData({ ...formData, discountPercent: 0 });
+                    } else {
+                      const n = parseInt(val);
+                      if (!isNaN(n) && n >= 0 && n <= 100) setFormData({ ...formData, discountPercent: n });
+                    }
+                  }}
                   className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
-                  min={0}
-                  max={100}
+                  placeholder="0 - 100"
                   required
                 />
               </div>
@@ -528,12 +537,20 @@ const AdminPromotions: React.FC = () => {
               <div>
                 <label className="block text-sm font-bold text-gray-700 mb-2">Phần trăm giảm giá (%)</label>
                 <input
-                  type="number"
-                  value={formData.discountPercent}
-                  onChange={(e) => setFormData({ ...formData, discountPercent: Number(e.target.value) })}
+                  type="text"
+                  inputMode="numeric"
+                  value={formData.discountPercent === 0 ? '' : formData.discountPercent}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    if (val === '' || val === '-') {
+                      setFormData({ ...formData, discountPercent: 0 });
+                    } else {
+                      const n = parseInt(val);
+                      if (!isNaN(n) && n >= 0 && n <= 100) setFormData({ ...formData, discountPercent: n });
+                    }
+                  }}
                   className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
-                  min={0}
-                  max={100}
+                  placeholder="0 - 100"
                 />
               </div>
               <div className="grid grid-cols-2 gap-4">

@@ -4,6 +4,7 @@ import { userService } from '../../api/services/userService';
 import { UserResponse } from '../../api/types/user';
 import { PagedResponse } from '../../api/types/common';
 import Pagination from '../../components/ui/Pagination';
+import { showConfirm } from '../../components/ui/Toast';
 
 const PAGE_SIZE = 10;
 
@@ -50,7 +51,8 @@ const AdminUsers: React.FC = () => {
   useEffect(() => { fetchUsers(currentPage); }, [currentPage]);
 
   const handleDelete = async (id: number) => {
-    if (!window.confirm('Bạn có chắc chắn muốn xóa người dùng này?')) return;
+    const ok = await showConfirm({ title: 'Xóa người dùng', message: 'Bạn có chắc chắn muốn xóa người dùng này?', confirmText: 'Xóa', danger: true });
+    if (!ok) return;
 
     try {
       await userService.deleteUser(id);

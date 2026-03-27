@@ -95,7 +95,8 @@ const AdminBrands: React.FC = () => {
   };
 
   const handleDelete = async (id: number) => {
-    if (!window.confirm('Bạn có chắc chắn muốn xóa thương hiệu này?')) return;
+    const ok = await showConfirm({ title: 'Xóa thương hiệu', message: 'Bạn có chắc chắn muốn xóa thương hiệu này?', confirmText: 'Xóa', danger: true });
+    if (!ok) return;
 
     try {
       await brandService.deleteBrand(id);

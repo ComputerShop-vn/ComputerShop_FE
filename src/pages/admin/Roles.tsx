@@ -3,6 +3,7 @@ import AdminLayout from '../../components/layout/AdminLayout';
 import { roleService } from '../../api/services/roleService';
 import Pagination from '../../components/ui/Pagination';
 import { RoleResponse, RoleCreationRequest, RoleUpdateRequest } from '../../api/types/role';
+import { showConfirm } from '../../components/ui/Toast';
 
 const AdminRoles: React.FC = () => {
   const [roles, setRoles] = useState<RoleResponse[]>([]);
@@ -82,7 +83,8 @@ const AdminRoles: React.FC = () => {
   };
 
   const handleDelete = async (id: number) => {
-    if (!window.confirm('Bạn có chắc chắn muốn xóa role này?')) return;
+    const ok = await showConfirm({ title: 'Xóa role', message: 'Bạn có chắc chắn muốn xóa role này?', confirmText: 'Xóa', danger: true });
+    if (!ok) return;
 
     try {
       await roleService.deleteRole(id);

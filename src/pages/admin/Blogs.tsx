@@ -87,7 +87,8 @@ const AdminBlogs: React.FC = () => {
   };
 
   const handleDelete = async (id: number) => {
-    if (!window.confirm('Bạn có chắc chắn muốn xóa blog này?')) return;
+    const ok = await showConfirm({ title: 'Xóa blog', message: 'Bạn có chắc chắn muốn xóa blog này?', confirmText: 'Xóa', danger: true });
+    if (!ok) return;
 
     try {
       await blogService.deleteBlog(id);

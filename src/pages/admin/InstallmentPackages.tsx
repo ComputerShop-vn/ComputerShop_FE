@@ -97,7 +97,8 @@ const AdminInstallmentPackages: React.FC = () => {
   };
 
   const handleDelete = async (id: number) => {
-    if (!window.confirm('Bạn có chắc chắn muốn xóa gói trả góp này?')) return;
+    const ok = await showConfirm({ title: 'Xóa gói trả góp', message: 'Bạn có chắc chắn muốn xóa gói trả góp này?', confirmText: 'Xóa', danger: true });
+    if (!ok) return;
 
     try {
       await installmentService.deletePackage(id);

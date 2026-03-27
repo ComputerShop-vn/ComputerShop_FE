@@ -82,7 +82,8 @@ const AdminCategories: React.FC = () => {
   };
 
   const handleDelete = async (id: number) => {
-    if (!window.confirm('Bạn có chắc chắn muốn xóa danh mục này?')) return;
+    const ok = await showConfirm({ title: 'Xóa danh mục', message: 'Bạn có chắc chắn muốn xóa danh mục này?', confirmText: 'Xóa', danger: true });
+    if (!ok) return;
 
     try {
       await categoryService.deleteCategory(id);

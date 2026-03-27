@@ -87,7 +87,8 @@ const AdminAttributes: React.FC = () => {
 
   // Handle delete attribute
   const handleDelete = async (id: number) => {
-    if (!window.confirm('Bạn có chắc chắn muốn xóa thuộc tính này?')) return;
+    const ok = await showConfirm({ title: 'Xóa thuộc tính', message: 'Bạn có chắc chắn muốn xóa thuộc tính này?', confirmText: 'Xóa', danger: true });
+    if (!ok) return;
 
     try {
       await attributeService.deleteAttribute(id);
