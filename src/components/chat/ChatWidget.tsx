@@ -25,32 +25,26 @@ const ChatWidget: React.FC<Props> = ({ currentUserId, openToUserId, openToUserNa
   const loadConversations = useCallback(async () => {
     try {
       const convs = await chatService.getConversations();
-      // Zero out unread for the currently open conversation
       const activeId = selectedRef.current?.otherUserId;
-      const adjusted = convs.map((c) =>
+      setConversations(convs.map((c) =>
         c.otherUserId === activeId ? { ...c, unreadCount: 0 } : c
-      );
-      setConversations(adjusted);
+      ));
     } catch (e) {
       console.error('[ChatWidget] load error:', e);
     }
   }, []);
 
-  // Unread total — exclude the currently selected conversation
   const unreadTotal = conversations.reduce((s, c) => {
     if (c.otherUserId === selected?.otherUserId) return s;
     return s + (c.unreadCount || 0);
   }, 0);
 
-  // Poll unread every 15s — only when widget is closed (no need when open, loadConversations handles it)
+  // Poll unread when widget closed
   useEffect(() => {
     if (isOpen) return;
     const poll = async () => {
       try {
         const convs = await chatService.getConversations();
-        // Don't update full list here, just recalc badge
-        const total = convs.reduce((s, c) => s + (c.unreadCount || 0), 0);
-        // Update conversations silently for badge
         setConversations(convs);
       } catch {}
     };
@@ -59,7 +53,6 @@ const ChatWidget: React.FC<Props> = ({ currentUserId, openToUserId, openToUserNa
     return () => clearInterval(id);
   }, [isOpen]);
 
-  // When widget opens: load conversations + staff list + start refresh interval
   useEffect(() => {
     if (!isOpen) return;
     setLoadingConvs(true);
@@ -69,37 +62,27 @@ const ChatWidget: React.FC<Props> = ({ currentUserId, openToUserId, openToUserNa
     return () => clearInterval(id);
   }, [isOpen, loadConversations]);
 
-  // When a conversation is selected, mark it as read immediately
   useEffect(() => {
     if (!selected) return;
-    // Zero unread in local state right away
     setConversations((prev) =>
       prev.map((c) => c.otherUserId === selected.otherUserId ? { ...c, unreadCount: 0 } : c)
     );
   }, [selected?.otherUserId]); // eslint-disable-line
 
-  // Handle external open-chat event (e.g. from Shop "Liên hệ ngay")
+  // open-chat-with-staff event
   useEffect(() => {
     const handler = async (e: CustomEvent) => {
       const { userId, userName } = (e.detail || {}) as { userId?: number; userName?: string };
       setIsOpen(true);
-
-      // If userId provided directly, use it; otherwise fetch first staff
       let targetId = userId;
       let targetName = userName ?? 'Nhân viên hỗ trợ';
-
       if (!targetId) {
         try {
           const list = await chatService.getStaffList();
-          if (list.length > 0) {
-            targetId = list[0].userId;
-            targetName = list[0].username;
-          }
+          if (list.length > 0) { targetId = list[0].userId; targetName = list[0].username; }
         } catch {}
       }
-
       if (!targetId) return;
-
       setConversations((prev) => {
         const existing = prev.find((c) => c.otherUserId === targetId);
         setSelected(existing ?? {
@@ -114,7 +97,6 @@ const ChatWidget: React.FC<Props> = ({ currentUserId, openToUserId, openToUserNa
     return () => window.removeEventListener('open-chat-with-staff', handler as EventListener);
   }, []);
 
-  // openToUserId prop
   useEffect(() => {
     if (!openToUserId) return;
     setIsOpen(true);
@@ -127,9 +109,7 @@ const ChatWidget: React.FC<Props> = ({ currentUserId, openToUserId, openToUserNa
     });
   }, [openToUserId]); // eslint-disable-line
 
-  const handleSelect = (conv: Conversation) => {
-    setSelected(conv);
-  };
+  const handleSelect = (conv: Conversation) => setSelected(conv);
 
   const handleStartChatWithStaff = () => {
     if (staffList.length === 0) return;
@@ -144,16 +124,18 @@ const ChatWidget: React.FC<Props> = ({ currentUserId, openToUserId, openToUserNa
 
   return (
     <>
-      {/* Floating button — badge excludes active conversation */}
+      {/* Floating button */}
       {!isOpen && (
         <button
           onClick={() => setIsOpen(true)}
-          className="fixed bottom-6 right-6 z-[999] size-14 bg-black hover:bg-gray-800 text-white rounded-full shadow-lg flex items-center justify-center transition-all hover:scale-110 active:scale-95"
+          className="fixed bottom-6 right-6 z-[999] size-14 rounded-full shadow-lg flex items-center justify-center transition-all hover:scale-110 active:scale-95"
+          style={{ background: '#002B5B', color: '#00D4FF', boxShadow: '0 4px 24px rgba(0,43,91,0.4)' }}
           aria-label="Mở chat"
         >
           <span className="material-symbols-outlined text-2xl">chat</span>
           {unreadTotal > 0 && (
-            <span className="absolute -top-1 -right-1 size-5 bg-red-500 text-white text-[10px] font-black rounded-full flex items-center justify-center border-2 border-white animate-pulse">
+            <span className="absolute -top-1 -right-1 size-5 text-white text-[10px] font-black rounded-full flex items-center justify-center border-2 border-white animate-pulse"
+              style={{ background: '#ef4444' }}>
               {unreadTotal > 9 ? '9+' : unreadTotal}
             </span>
           )}
@@ -162,29 +144,38 @@ const ChatWidget: React.FC<Props> = ({ currentUserId, openToUserId, openToUserNa
 
       {/* Widget window */}
       {isOpen && (
-        <div className="fixed bottom-6 right-6 z-[999] w-full max-w-[400px] h-[540px] bg-white shadow-2xl rounded-2xl flex flex-col overflow-hidden border border-gray-200">
+        <div className="fixed bottom-6 right-6 z-[999] w-full max-w-[400px] h-[540px] shadow-2xl rounded-2xl flex flex-col overflow-hidden"
+          style={{ border: '1px solid rgba(0,43,91,0.15)', background: '#ffffff' }}>
           {!selected ? (
             <>
-              <div className="p-4 border-b border-gray-100 bg-gray-50 flex items-center justify-between">
+              {/* Header */}
+              <div className="p-4 flex items-center justify-between" style={{ background: '#002B5B', borderBottom: '1px solid rgba(0,212,255,0.2)' }}>
                 <div className="flex items-center gap-3">
-                  <div className="size-9 bg-black rounded-xl flex items-center justify-center">
-                    <span className="material-symbols-outlined text-white text-lg">chat</span>
+                  <div className="size-9 rounded-xl flex items-center justify-center" style={{ background: 'rgba(0,212,255,0.2)' }}>
+                    <span className="material-symbols-outlined text-lg" style={{ color: '#00D4FF' }}>chat</span>
                   </div>
                   <div>
-                    <h2 className="text-sm font-black text-gray-900 uppercase tracking-tight">Tin nhắn</h2>
-                    <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">{conversations.length} cuộc trò chuyện</p>
+                    <h2 className="text-sm font-black uppercase tracking-tight" style={{ color: '#F8FAFC' }}>Tin nhắn</h2>
+                    <p className="text-[10px] font-bold uppercase tracking-widest" style={{ color: '#64748b' }}>{conversations.length} cuộc trò chuyện</p>
                   </div>
                 </div>
-                <button onClick={() => setIsOpen(false)} className="size-8 hover:bg-red-50 rounded-lg flex items-center justify-center text-gray-400 hover:text-red-500 transition">
+                <button onClick={() => setIsOpen(false)} className="size-8 rounded-lg flex items-center justify-center transition" style={{ color: '#64748b' }}
+                  onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'rgba(239,68,68,0.15)'; (e.currentTarget as HTMLElement).style.color = '#ef4444'; }}
+                  onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent'; (e.currentTarget as HTMLElement).style.color = '#64748b'; }}
+                >
                   <span className="material-symbols-outlined text-lg">close</span>
                 </button>
               </div>
 
+              {/* New chat button */}
               {staffList.length > 0 && (
                 <div className="px-4 pt-3 pb-1">
                   <button
                     onClick={handleStartChatWithStaff}
-                    className="w-full flex items-center gap-3 px-4 py-3 bg-black text-white rounded-xl text-sm font-bold hover:bg-gray-800 transition"
+                    className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold transition"
+                    style={{ background: '#002B5B', color: '#00D4FF' }}
+                    onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = '#001a3d'}
+                    onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = '#002B5B'}
                   >
                     <span className="material-symbols-outlined text-lg">support_agent</span>
                     Chat với nhân viên hỗ trợ
