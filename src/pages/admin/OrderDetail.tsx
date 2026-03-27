@@ -63,6 +63,7 @@ const OrderDetail: React.FC = () => {
     switch (status.toUpperCase()) {
       case 'PENDING': return 'bg-orange-100 text-orange-600';
       case 'CONFIRMED': return 'bg-blue-100 text-blue-600';
+      case 'PROCESSING': return 'bg-cyan-100 text-cyan-700';
       case 'DELIVERED': return 'bg-indigo-100 text-indigo-600';
       case 'COMPLETED': return 'bg-green-100 text-green-600';
       case 'CANCELLED': return 'bg-red-100 text-red-600';
@@ -150,6 +151,7 @@ const OrderDetail: React.FC = () => {
             >
               <option value="PENDING">Chờ xác nhận</option>
               <option value="CONFIRMED">Đã xác nhận</option>
+              <option value="PROCESSING">Đang xử lý</option>
               <option value="DELIVERED">Đang giao</option>
               <option value="COMPLETED">Hoàn thành</option>
               <option value="CANCELLED">Đã hủy</option>

@@ -11,13 +11,14 @@ import { showToast, showConfirm } from '../../components/ui/Toast';
 const fmt = (v: number) => new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(v);
 
 const statusLabel: Record<string, { label: string; color: string }> = {
-  PENDING:   { label: 'Chờ xác nhận', color: 'bg-yellow-100 text-yellow-700' },
-  CONFIRMED: { label: 'Đã xác nhận',  color: 'bg-blue-100 text-blue-700' },
-  DELIVERED: { label: 'Đang giao',    color: 'bg-purple-100 text-purple-700' },
-  COMPLETED: { label: 'Hoàn thành',   color: 'bg-green-100 text-green-700' },
-  CANCELLED: { label: 'Đã hủy',       color: 'bg-red-100 text-red-700' },
-  PAID:      { label: 'Đã thanh toán',color: 'bg-emerald-100 text-emerald-700' },
-  FAILED:    { label: 'Thất bại',     color: 'bg-gray-100 text-gray-500' },
+  PENDING:    { label: 'Chờ xác nhận', color: 'bg-yellow-100 text-yellow-700' },
+  CONFIRMED:  { label: 'Đã xác nhận',  color: 'bg-blue-100 text-blue-700' },
+  PROCESSING: { label: 'Đang xử lý',   color: 'bg-cyan-100 text-cyan-700' },
+  DELIVERED:  { label: 'Đang giao',    color: 'bg-purple-100 text-purple-700' },
+  COMPLETED:  { label: 'Hoàn thành',   color: 'bg-green-100 text-green-700' },
+  CANCELLED:  { label: 'Đã hủy',       color: 'bg-red-100 text-red-700' },
+  PAID:       { label: 'Đã thanh toán',color: 'bg-emerald-100 text-emerald-700' },
+  FAILED:     { label: 'Thất bại',     color: 'bg-gray-100 text-gray-500' },
 };
 
 const WARRANTY_STATUS: Record<WarrantyStatus, { label: string; color: string }> = {

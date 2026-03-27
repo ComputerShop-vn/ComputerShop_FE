@@ -11,20 +11,22 @@ const fmtDate = (d?: string) => d ? new Date(d).toLocaleString('vi-VN', { day: '
 const PAGE_SIZE = 10;
 
 const STATUS_TABS = [
-  { key: 'ALL',       label: 'Tất cả' },
-  { key: 'PENDING',   label: 'Chờ xác nhận' },
-  { key: 'CONFIRMED', label: 'Đã xác nhận' },
-  { key: 'DELIVERED', label: 'Đang giao' },
-  { key: 'COMPLETED', label: 'Hoàn thành' },
-  { key: 'CANCELLED', label: 'Đã hủy' },
+  { key: 'ALL',        label: 'Tất cả' },
+  { key: 'PENDING',    label: 'Chờ xác nhận' },
+  { key: 'CONFIRMED',  label: 'Đã xác nhận' },
+  { key: 'PROCESSING', label: 'Đang xử lý' },
+  { key: 'DELIVERED',  label: 'Đang giao' },
+  { key: 'COMPLETED',  label: 'Hoàn thành' },
+  { key: 'CANCELLED',  label: 'Đã hủy' },
 ] as const;
 
 const STATUS_CFG: Record<string, { label: string; color: string }> = {
-  PENDING:   { label: 'Chờ xác nhận', color: 'bg-orange-100 text-orange-600' },
-  CONFIRMED: { label: 'Đã xác nhận',  color: 'bg-blue-100 text-blue-600' },
-  DELIVERED: { label: 'Đang giao',    color: 'bg-indigo-100 text-indigo-600' },
-  COMPLETED: { label: 'Hoàn thành',   color: 'bg-green-100 text-green-600' },
-  CANCELLED: { label: 'Đã hủy',       color: 'bg-red-100 text-red-600' },
+  PENDING:    { label: 'Chờ xác nhận', color: 'bg-orange-100 text-orange-600' },
+  CONFIRMED:  { label: 'Đã xác nhận',  color: 'bg-blue-100 text-blue-600' },
+  PROCESSING: { label: 'Đang xử lý',   color: 'bg-cyan-100 text-cyan-700' },
+  DELIVERED:  { label: 'Đang giao',    color: 'bg-indigo-100 text-indigo-600' },
+  COMPLETED:  { label: 'Hoàn thành',   color: 'bg-green-100 text-green-600' },
+  CANCELLED:  { label: 'Đã hủy',       color: 'bg-red-100 text-red-600' },
 };
 
 const AdminOrders: React.FC = () => {
@@ -233,6 +235,7 @@ const AdminOrders: React.FC = () => {
                   >
                     <option value="PENDING">Chờ xác nhận</option>
                     <option value="CONFIRMED">Đã xác nhận</option>
+                    <option value="PROCESSING">Đang xử lý</option>
                     <option value="DELIVERED">Đang giao</option>
                     <option value="COMPLETED">Hoàn thành</option>
                     <option value="CANCELLED">Đã hủy</option>

@@ -11,21 +11,23 @@ const fmtDate = (d?: string) => d ? new Date(d).toLocaleString('vi-VN', { day: '
 const PAGE_SIZE = 10;
 
 const STATUS_TABS = [
-  { key: 'ALL',       label: 'Tất cả' },
-  { key: 'PENDING',   label: 'Chờ xác nhận' },
-  { key: 'CONFIRMED', label: 'Đã xác nhận' },
-  { key: 'DELIVERED', label: 'Đang giao' },
-  { key: 'COMPLETED', label: 'Hoàn thành' },
-  { key: 'CANCELLED', label: 'Đã hủy' },
+  { key: 'ALL',        label: 'Tất cả' },
+  { key: 'PENDING',    label: 'Chờ xác nhận' },
+  { key: 'CONFIRMED',  label: 'Đã xác nhận' },
+  { key: 'PROCESSING', label: 'Đang xử lý' },
+  { key: 'DELIVERED',  label: 'Đang giao' },
+  { key: 'COMPLETED',  label: 'Hoàn thành' },
+  { key: 'CANCELLED',  label: 'Đã hủy' },
 ] as const;
 
 const STATUS_CFG: Record<string, { label: string; color: string }> = {
-  PENDING:   { label: 'Chờ xác nhận', color: 'bg-yellow-100 text-yellow-700' },
-  CONFIRMED: { label: 'Đã xác nhận',  color: 'bg-blue-100 text-blue-700' },
-  DELIVERED: { label: 'Đang giao',    color: 'bg-purple-100 text-purple-700' },
-  COMPLETED: { label: 'Hoàn thành',   color: 'bg-green-100 text-green-700' },
-  CANCELLED: { label: 'Đã hủy',       color: 'bg-red-100 text-red-700' },
-  PAID:      { label: 'Đã thanh toán',color: 'bg-emerald-100 text-emerald-700' },
+  PENDING:    { label: 'Chờ xác nhận', color: 'bg-yellow-100 text-yellow-700' },
+  CONFIRMED:  { label: 'Đã xác nhận',  color: 'bg-blue-100 text-blue-700' },
+  PROCESSING: { label: 'Đang xử lý',   color: 'bg-cyan-100 text-cyan-700' },
+  DELIVERED:  { label: 'Đang giao',    color: 'bg-purple-100 text-purple-700' },
+  COMPLETED:  { label: 'Hoàn thành',   color: 'bg-green-100 text-green-700' },
+  CANCELLED:  { label: 'Đã hủy',       color: 'bg-red-100 text-red-700' },
+  PAID:       { label: 'Đã thanh toán',color: 'bg-emerald-100 text-emerald-700' },
 };
 
 const OrderList: React.FC = () => {
