@@ -406,17 +406,6 @@ const OrderDetail: React.FC = () => {
             </div>
           )}
 
-          {/* Retry full payment */}
-          {isUnpaidFull && (
-            <button
-              onClick={handleRetryPayment}
-              disabled={retryingPayment}
-              className="w-full py-3 bg-black text-white text-xs font-bold uppercase tracking-widest rounded-xl hover:bg-gray-800 transition disabled:opacity-50"
-            >
-              {retryingPayment ? 'Đang xử lý...' : 'Thanh toán VNPay'}
-            </button>
-          )}
-
           {/* Cancel */}
           {canCancel && (
             <button
