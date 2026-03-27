@@ -102,7 +102,6 @@ const Checkout: React.FC = () => {
         try {
           const payment = await paymentService.createPayment(order.orderId);
           if (!payment.paymentUrl) throw new Error('Không nhận được link thanh toán từ server.');
-          await clearCart(); // Clear cart trước khi redirect
           paymentService.redirectToPayment(payment.paymentUrl);
           return;
         } catch (paymentError: any) {
