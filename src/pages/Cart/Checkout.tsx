@@ -333,7 +333,12 @@ const Checkout: React.FC = () => {
                     <h4 className="text-xs font-bold text-black truncate">{item.name}</h4>
                     <p className="text-[10px] text-gray-400">SL: {item.quantity}</p>
                   </div>
-                  <p className="text-xs font-bold text-black">{fmt(item.price * item.quantity)}</p>
+                  <div className="text-right flex-shrink-0">
+                    <p className="text-xs font-bold text-black">{fmt(item.price * item.quantity)}</p>
+                    {item.originalPrice && (
+                      <p className="text-[10px] text-red-400 line-through">{fmt(item.originalPrice * item.quantity)}</p>
+                    )}
+                  </div>
                 </div>
               ))}
             </div>

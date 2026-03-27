@@ -203,7 +203,8 @@ const BuildPC: React.FC = () => {
       closeModal();
     } catch (err: any) {
       const msg = err.message || '';
-      if (msg.toLowerCase().includes('ram slot') || msg.toLowerCase().includes('slot') || err.code === 10005) {
+      const code = err.code;
+      if (code === 10005 || msg.toLowerCase().includes('ram slot')) {
         showToast('Bo mạch chủ đã đầy slot RAM, không thể thêm.', 'error');
         setRamSlotFull(true);
       } else {
