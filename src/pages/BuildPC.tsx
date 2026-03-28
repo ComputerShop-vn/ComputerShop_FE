@@ -133,9 +133,11 @@ const BuildPC: React.FC = () => {
 
       // Resolve categoryId từ cache theo tên category của slot
       const slotCategoryName = COMPONENT_CATEGORY_NAMES[slot].toLowerCase();
-      const fallbackCategoryId = categoryCache.find(
-        c => c.categoryName.toLowerCase().includes(slotCategoryName)
-      )?.categoryId;
+      const slotCategoryLower = slotCategoryName.toLowerCase();
+      const fallbackCategoryId = 
+        categoryCache.find(c => c.categoryName.toLowerCase() === slotCategoryLower)?.categoryId ||
+        categoryCache.find(c => c.categoryName.toLowerCase().startsWith(slotCategoryLower))?.categoryId ||
+        categoryCache.find(c => c.categoryName.toLowerCase().includes(slotCategoryLower))?.categoryId;
 
       if (currentItems.length > 0) {
         try {
