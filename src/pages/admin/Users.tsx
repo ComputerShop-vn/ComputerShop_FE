@@ -192,15 +192,7 @@ const AdminUsers: React.FC = () => {
       title="Quản Lý Người Dùng" 
       subtitle={`Quản lý ${pagedData?.totalElements ?? users.length} tài khoản khách hàng và nhân viên hệ thống.`}
       requiredRole="admin"
-      actions={
-        <button 
-          onClick={() => setShowAddModal(true)}
-          className="bg-blue-600 text-white px-6 py-2.5 rounded-lg text-sm font-bold shadow-lg shadow-blue-600/20 hover:bg-blue-700 transition flex items-center"
-        >
-          <span className="material-symbols-outlined mr-2">person_add</span>
-          Thêm Người Dùng
-        </button>
-      }
+      
     >
       {loading && (
         <div className="flex items-center justify-center py-20">
@@ -308,7 +300,6 @@ const AdminUsers: React.FC = () => {
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
             <div className="sticky top-0 bg-white border-b border-gray-100 px-6 py-4 flex items-center justify-between">
-              <h2 className="text-xl font-bold">Thêm Người Dùng Mới</h2>
               <button onClick={() => { setShowAddModal(false); resetForm(); }} className="p-2 hover:bg-gray-100 rounded-lg transition">
                 <span className="material-symbols-outlined">close</span>
               </button>

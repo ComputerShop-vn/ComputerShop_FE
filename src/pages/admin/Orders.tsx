@@ -246,8 +246,8 @@ const AdminOrders: React.FC = () => {
                     <option value="PENDING">Chờ xác nhận</option>
                     <option value="CONFIRMED">Đã xác nhận</option>
                     <option value="PROCESSING">Đang xử lý</option>
-                    <option value="DELIVERED">Đang giao</option>
-                    <option value="COMPLETED">Hoàn thành</option>
+                    <option value="SHIPPED">Đang giao</option>
+                    <option value="DELIVERED">Hoàn thành</option>
                     <option value="CANCELLED">Đã hủy</option>
                   </select>
                 </div>
