@@ -14,7 +14,13 @@ const fmt = (v: number) => new Intl.NumberFormat('vi-VN', { style: 'currency', c
 const fmtDate = (d: string) => new Date(d).toLocaleDateString('vi-VN');
 
 const Checkout: React.FC = () => {
-  const { cart, totalPrice, clearCart } = useCart();
+  const { 
+    cart, 
+    totalPrice, 
+    selectedItems, 
+    selectedTotalPrice, 
+    clearCart 
+  } = useCart();
   const { user: authUser } = useAuth();
   const navigate = useNavigate();
   const [paymentMethod, setPaymentMethod] = useState<'cod' | 'full' | 'installment'>('cod');
@@ -24,6 +30,10 @@ const Checkout: React.FC = () => {
   const [previewLoading, setPreviewLoading] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [formData, setFormData] = useState({ fullName: '', phoneNumber: '', address: '' });
+
+  // Get selected cart items only
+  const selectedCartItems = cart.filter(item => item.cartItemId && selectedItems.includes(item.cartItemId));
+  const checkoutPrice = selectedTotalPrice; // Use selected total price instead of total price
 
   useEffect(() => {
     if (authUser) {
@@ -44,14 +54,14 @@ const Checkout: React.FC = () => {
     setPreviewLoading(true);
     setPreview(null);
     try {
-      const result = await installmentService.calculatePreview({ packageId: pkg.packageId, orderAmount: totalPrice });
+      const result = await installmentService.calculatePreview({ packageId: pkg.packageId, orderAmount: checkoutPrice });
       setPreview(result);
     } catch {
       setPreview(null);
     } finally {
       setPreviewLoading(false);
     }
-  }, [totalPrice]);
+  }, [checkoutPrice]);
 
   useEffect(() => {
     if (paymentMethod === 'installment' && selectedPackage) {
@@ -59,7 +69,12 @@ const Checkout: React.FC = () => {
     }
   }, [paymentMethod, selectedPackage, fetchPreview]);
 
-  useEffect(() => { if (cart.length === 0) navigate('/cart'); }, [cart.length, navigate]);
+  useEffect(() => { 
+    if (selectedCartItems.length === 0) {
+      showToast('Vui lòng chọn sản phẩm để thanh toán', 'warning');
+      navigate('/cart'); 
+    }
+  }, [selectedCartItems.length, navigate]);
 
   const handlePlaceOrder = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -82,12 +97,18 @@ const Checkout: React.FC = () => {
       const backendPaymentMethod = paymentMethod === 'cod' ? 'COD' : 'VNPAY';
       const backendPaymentMode = paymentMethod === 'installment' ? 'INSTALLMENT' : 'FULL';
 
+      // Get variant IDs from selected cart items
+      const variantIds = selectedCartItems
+        .map(item => item.variantId || parseInt(item.id))
+        .filter(id => !isNaN(id));
+
       const orderData: any = {
         recipientName: formData.fullName,
         recipientPhone: formData.phoneNumber,
         shippingAddress: formData.address,
         paymentMethod: backendPaymentMethod,
         paymentMode: backendPaymentMode,
+        variantIds: variantIds, // Add selected variant IDs
       };
 
       // Only add packageId if payment mode is installment
@@ -130,7 +151,7 @@ const Checkout: React.FC = () => {
     }
   };
 
-  if (cart.length === 0) {
+  if (selectedCartItems.length === 0) {
     return null;
   }
 
@@ -327,7 +348,7 @@ const Checkout: React.FC = () => {
             <h3 className="text-xs font-black uppercase tracking-[0.2em] text-black mb-8 border-b border-gray-50 pb-4">Đơn hàng của bạn</h3>
             
             <div className="max-h-[300px] overflow-y-auto mb-8 space-y-4 pr-2">
-              {cart.map((item) => (
+              {selectedCartItems.map((item) => (
                 <div key={item.id} className="flex items-center gap-4">
                   <div className="w-12 h-12 bg-gray-50 rounded-lg overflow-hidden flex-shrink-0">
                     <img src={item.image} alt={item.name} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
@@ -348,8 +369,12 @@ const Checkout: React.FC = () => {
 
             <div className="space-y-4 pt-4 border-t border-gray-50">
               <div className="flex justify-between text-sm">
+                <span className="text-gray-400">Sản phẩm đã chọn</span>
+                <span className="font-bold text-black">{selectedCartItems.length}</span>
+              </div>
+              <div className="flex justify-between text-sm">
                 <span className="text-gray-400">Tổng tiền hàng</span>
-                <span className="font-bold text-black">{fmt(totalPrice)}</span>
+                <span className="font-bold text-black">{fmt(checkoutPrice)}</span>
               </div>
               <div className="flex justify-between text-sm">
                 <span className="text-gray-400">Phí vận chuyển</span>
@@ -386,7 +411,7 @@ const Checkout: React.FC = () => {
               {paymentMethod !== 'installment' && (
                 <div className="pt-4 border-t border-gray-50 flex justify-between items-end">
                   <span className="text-xs font-bold uppercase tracking-widest text-black">Tổng thanh toán</span>
-                  <p className="text-2xl font-black text-black leading-none">{fmt(totalPrice)}</p>
+                  <p className="text-2xl font-black text-black leading-none">{fmt(checkoutPrice)}</p>
                 </div>
               )}
             </div>

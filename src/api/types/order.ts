@@ -64,6 +64,7 @@ export interface PlaceOrderRequest {
   paymentMethod: 'COD' | 'VNPAY';
   paymentMode: 'FULL' | 'INSTALLMENT';
   packageId?: number; // Required for INSTALLMENT
+  variantIds?: number[]; // Optional: Choose specific products from cart. If NULL or EMPTY, take all cart items.
 }
 
 export interface UpdateOrderStatusRequest {

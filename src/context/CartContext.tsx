@@ -8,20 +8,27 @@ import { showToast } from '../components/ui/Toast';
 
 interface CartContextType {
   cart: CartItem[];
+  selectedItems: number[]; // Array of cartItemIds that are selected
   addToCart: (product: Product, variantId?: number) => Promise<void>;
   removeFromCart: (productId: string, cartItemId?: number) => Promise<void>;
   updateQuantity: (productId: string, quantity: number, cartItemId?: number) => Promise<void>;
   clearCart: () => Promise<void>;
   totalItems: number;
   totalPrice: number;
+  selectedTotalPrice: number; // Total price of selected items only
   loading: boolean;
   refreshCart: () => Promise<void>;
+  toggleItemSelection: (cartItemId: number) => void;
+  selectAllItems: () => void;
+  deselectAllItems: () => void;
+  isItemSelected: (cartItemId: number) => boolean;
 }
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
 
 export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [cart, setCart] = useState<CartItem[]>([]);
+  const [selectedItems, setSelectedItems] = useState<number[]>([]);
   const [loading, setLoading] = useState(false);
   const { isAuthenticated } = useAuth();
   const navigate = useNavigate();
@@ -33,6 +40,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
       return {
         id: item.variantId.toString(),
         cartItemId: item.cartItemId,
+        variantId: item.variantId, // Store variantId for order creation
         name: item.productName || item.variantName || 'Unknown Product',
         price: effectivePrice,
         originalPrice: item.discountedPrice ? item.price : undefined,
@@ -69,6 +77,11 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const apiCart = await cartService.getMyCart();
       const localCart = convertApiCartToLocal(apiCart);
       setCart(localCart);
+      
+      // Auto-select all items when cart is refreshed
+      const cartItemIds = localCart.map(item => item.cartItemId).filter(id => id !== undefined) as number[];
+      setSelectedItems(cartItemIds);
+      
       // Clear localStorage cart when synced with API
       localStorage.removeItem('cart');
     } catch (error: any) {
@@ -97,6 +110,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (!isAuthenticated) {
       // Clear cart when logged out
       setCart([]);
+      setSelectedItems([]);
       localStorage.removeItem('cart');
     }
   }, [isAuthenticated]);
@@ -226,6 +240,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const clearCart = useCallback(async () => {
     if (!isAuthenticated) {
       setCart([]);
+      setSelectedItems([]);
       return;
     }
 
@@ -236,28 +251,63 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
       );
       await Promise.all(deletePromises);
       setCart([]);
+      setSelectedItems([]);
     } catch (error: any) {
       console.error('Failed to clear cart:', error);
       setCart([]);
+      setSelectedItems([]);
     } finally {
       setLoading(false);
     }
   }, [isAuthenticated, cart]);
 
+  // Selection functions
+  const toggleItemSelection = (cartItemId: number) => {
+    setSelectedItems(prev => 
+      prev.includes(cartItemId) 
+        ? prev.filter(id => id !== cartItemId)
+        : [...prev, cartItemId]
+    );
+  };
+
+  const selectAllItems = () => {
+    const allCartItemIds = cart.map(item => item.cartItemId).filter(id => id !== undefined) as number[];
+    setSelectedItems(allCartItemIds);
+  };
+
+  const deselectAllItems = () => {
+    setSelectedItems([]);
+  };
+
+  const isItemSelected = (cartItemId: number) => {
+    return selectedItems.includes(cartItemId);
+  };
+
   const totalItems = cart.length; // Số lượng sản phẩm khác nhau
   const totalPrice = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+  
+  // Calculate total price of selected items only
+  const selectedTotalPrice = cart
+    .filter(item => item.cartItemId && selectedItems.includes(item.cartItemId))
+    .reduce((sum, item) => sum + (item.price * item.quantity), 0);
 
   return (
     <CartContext.Provider value={{ 
       cart, 
+      selectedItems,
       addToCart, 
       removeFromCart, 
       updateQuantity, 
       clearCart,
       totalItems,
       totalPrice,
+      selectedTotalPrice,
       loading,
       refreshCart,
+      toggleItemSelection,
+      selectAllItems,
+      deselectAllItems,
+      isItemSelected,
     }}>
       {children}
     </CartContext.Provider>
