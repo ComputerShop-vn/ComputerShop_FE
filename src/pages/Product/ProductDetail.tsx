@@ -83,7 +83,7 @@ const ProductDetail: React.FC = () => {
 
   const handleBuyNow = async () => {
     if (!isAuthenticated) {
-      showToast('Vui lòng đăng nhập để mua hàng.', 'warning');
+      showToast('Vui lòng đăng nhập để thêm vào giỏ hàng.', 'warning');
       navigate('/login');
       return;
     }
@@ -103,8 +103,14 @@ const ProductDetail: React.FC = () => {
       category: product.categoryName || '',
     };
     try {
-      await addToCart(cartItem, variantId);
-      navigate('/checkout');
+      for (let i = 0; i < quantity; i++) await addToCart(cartItem, variantId);
+      const go = await showConfirm({ 
+        title: 'Thêm thành công', 
+        message: 'Đã thêm vào giỏ hàng! Bạn có muốn xem giỏ hàng ngay không?', 
+        confirmText: 'Xem giỏ hàng', 
+        cancelText: 'Tiếp tục mua' 
+      });
+      if (go) navigate('/cart');
     } catch {
       // error already handled in CartContext
     }
@@ -305,7 +311,7 @@ const ProductDetail: React.FC = () => {
                 onClick={handleBuyNow}
                 className="flex-1 border border-gray-200 py-4 text-[11px] font-bold uppercase tracking-widest hover:bg-gray-50 transition rounded-xl"
               >
-                Mua trả góp 0%
+                Đặt hàng ngay
               </button>
               <button
                 onClick={() => isInCompare(product.productId) ? removeFromCompare(product.productId) : addToCompare(product)}

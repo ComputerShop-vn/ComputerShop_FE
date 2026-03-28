@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { useCart } from '../context/CartContext';
 import { pcBuildService } from '../api/services/pcBuildService';
 import { productService } from '../api/services/productService';
 import { categoryService } from '../api/services/categoryService';
@@ -15,7 +16,7 @@ import { CategoryResponse } from '../api/types/category';
 import { ProductResponse } from '../api/types/product';
 import { InstallmentPackageResponse } from '../api/types/installment';
 import { paymentService } from '../api/services/paymentService';
-import { showToast } from '../components/ui/Toast';
+import { showToast, showConfirm } from '../components/ui/Toast';
 
 const fmt = (v: number) => new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(v);
 
@@ -28,6 +29,7 @@ const COMPONENT_SLOTS: ComponentType[] = [
 
 const BuildPC: React.FC = () => {
   const { isAuthenticated } = useAuth();
+  const { addToCart } = useCart();
   const navigate = useNavigate();
 
   const [build, setBuild] = useState<PCBuildResponse | null>(null);
@@ -282,6 +284,55 @@ const BuildPC: React.FC = () => {
     }
   };
 
+  // ── Add build to cart ──
+  const addBuildToCart = async () => {
+    if (!build || build.items.length === 0) {
+      showToast('Không có sản phẩm nào trong build', 'warning');
+      return;
+    }
+
+    if (missingRequired.length > 0) {
+      showToast('Cần chọn đủ linh kiện bắt buộc trước khi thêm vào giỏ hàng', 'warning');
+      return;
+    }
+
+    try {
+      setPlacingOrder(true);
+      
+      // Add each item in build to cart
+      for (const item of build.items) {
+        const cartItem: any = {
+          id: String(item.productId),
+          name: item.productName,
+          price: item.discountedPrice ?? item.price,
+          originalPrice: item.discountedPrice ? item.price : undefined,
+          image: item.thumbnailUrl || '',
+          brand: item.brandName || '',
+          category: item.categoryName || '',
+        };
+        
+        await addToCart(cartItem, item.variantId);
+      }
+      
+      showToast(`Đã thêm ${build.items.length} sản phẩm vào giỏ hàng!`, 'success');
+      
+      // Ask user if they want to go to cart
+      const goToCart = await showConfirm({
+        title: 'Thêm thành công',
+        message: `Đã thêm ${build.items.length} sản phẩm vào giỏ hàng! Bạn có muốn xem giỏ hàng ngay không?`,
+        confirmText: 'Xem giỏ hàng',
+        cancelText: 'Tiếp tục build'
+      });
+      if (goToCart) {
+        navigate('/cart');
+      }
+    } catch (err: any) {
+      showToast(err.message || 'Không thể thêm vào giỏ hàng', 'error');
+    } finally {
+      setPlacingOrder(false);
+    }
+  };
+
   // ── Place order from draft (POST /pc-builds/draft/order) ──
   const submitOrderFromBuild = async () => {
     if (!orderForm.recipientName.trim() || !orderForm.recipientPhone.trim() || !orderForm.shippingAddress.trim()) {
@@ -470,10 +521,10 @@ const BuildPC: React.FC = () => {
                 className="flex-1 md:flex-none px-7 py-3.5 border border-black text-black text-[11px] font-bold uppercase tracking-widest hover:bg-gray-50 transition rounded-xl disabled:opacity-40 disabled:cursor-not-allowed">
                 Lưu cấu hình
               </button>
-              <button onClick={() => { if (missingRequired.length > 0) { showToast('Cần chọn đủ linh kiện bắt buộc', 'warning'); return; } setShowOrderModal(true); }}
-                disabled={!build || build.items.length === 0}
+              <button onClick={addBuildToCart}
+                disabled={!build || build.items.length === 0 || placingOrder}
                 className="flex-1 md:flex-none px-9 py-3.5 bg-black text-white text-[11px] font-bold uppercase tracking-widest hover:bg-gray-800 transition rounded-xl shadow-xl shadow-black/20 disabled:opacity-40 disabled:cursor-not-allowed">
-                Đặt hàng ngay
+                {placingOrder ? 'Đang thêm...' : 'Đặt hàng ngay'}
               </button>
             </div>
           </div>
