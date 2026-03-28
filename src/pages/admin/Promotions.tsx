@@ -338,45 +338,29 @@ const AdminPromotions: React.FC = () => {
                         {promo.isActive ? 'Hoạt động' : 'Tạm dừng'}
                       </span>
                     </td>
-                    <td className="px-6 py-4 text-right">
-                      <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <button 
-                          onClick={() => openAssignModal(promo, 'products')}
-                          className="p-2 text-purple-600 hover:bg-purple-100 rounded-lg transition" 
-                          title="Gán cho sản phẩm"
-                        >
-                          <span className="material-symbols-outlined text-xl">inventory_2</span>
-                        </button>
-                        <button 
-                          onClick={() => openAssignModal(promo, 'category')}
-                          className="p-2 text-orange-600 hover:bg-orange-100 rounded-lg transition" 
-                          title="Gán cho danh mục"
-                        >
-                          <span className="material-symbols-outlined text-xl">category</span>
-                        </button>
-                        <button 
-                          onClick={() => openAssignModal(promo, 'brand')}
-                          className="p-2 text-cyan-600 hover:bg-cyan-100 rounded-lg transition" 
-                          title="Gán cho thương hiệu"
-                        >
-                          <span className="material-symbols-outlined text-xl">store</span>
-                        </button>
-                        <button 
-                          onClick={() => openEditModal(promo)}
-                          className="p-2 text-blue-600 hover:bg-blue-100 rounded-lg transition" 
-                          title="Chỉnh sửa"
-                        >
-                          <span className="material-symbols-outlined text-xl">edit</span>
-                        </button>
-                        <button 
-                          onClick={() => handleDelete(promo.promotionId)}
-                          className="p-2 text-red-500 hover:bg-red-100 rounded-lg transition" 
-                          title="Xóa"
-                        >
-                          <span className="material-symbols-outlined text-xl">delete</span>
-                        </button>
-                      </div>
-                    </td>
+                   <td className="px-6 py-4 text-right">
+  <div className="flex items-center justify-end gap-2">
+    {[
+      { icon: 'inventory_2', label: 'SP', color: 'purple', onClick: () => openAssignModal(promo, 'products') },
+      { icon: 'category', label: 'DM', color: 'orange', onClick: () => openAssignModal(promo, 'category') },
+      { icon: 'store', label: 'TH', color: 'cyan', onClick: () => openAssignModal(promo, 'brand') },
+      { icon: 'edit', label: 'Sửa', color: 'indigo', onClick: () => openEditModal(promo) },
+      { icon: 'delete', label: 'Xóa', color: 'rose', onClick: () => handleDelete(promo.promotionId) },
+    ].map((btn, idx) => (
+      <button
+        key={idx}
+        onClick={btn.onClick}
+        className={`
+          flex items-center gap-1.5 px-3 py-1.5 rounded-full transition-all duration-200
+          bg-${btn.color}-50 text-${btn.color}-600 hover:bg-${btn.color}-100 active:scale-90
+        `}
+      >
+        <span className="material-symbols-outlined text-[16px]">{btn.icon}</span>
+        <span className="text-[10px] font-black uppercase tracking-tighter">{btn.label}</span>
+      </button>
+    ))}
+  </div>
+</td>
                   </tr>
                 ))}
                 {promotions.length === 0 && (

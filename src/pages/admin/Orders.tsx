@@ -230,11 +230,18 @@ const AdminOrders: React.FC = () => {
                     </span>
                     <span className="text-xs text-gray-400">KH: {order.username || `ID ${order.userId}`}</span>
                   </div>
+                  
                   <select
                     value={order.status}
                     onChange={e => updateStatus(order.orderId, e.target.value)}
                     onClick={e => e.stopPropagation()}
-                    className="text-[10px] font-bold uppercase tracking-widest px-3 py-1.5 rounded-full border border-gray-200 bg-white outline-none focus:ring-1 focus:ring-green-400 cursor-pointer text-gray-600"
+                    className="relative z-50 text-[10px] font-bold uppercase tracking-widest px-3 pr-8 py-1.5 rounded-full border border-gray-200 bg-white outline-none focus:ring-1 focus:ring-green-400 cursor-pointer text-gray-600 appearance-none"
+                    style={{
+                      backgroundImage: `url('data:image/svg+xml;utf8,<svg fill="rgb(75 85 99)" height="24" viewBox="0 0 24 24" width="24" xmlns="http://www.w3.org/2000/svg"><path d="M7 10l5 5 5-5z"/></svg>')`,
+                      backgroundRepeat: 'no-repeat',
+                      backgroundPosition: 'right 4px center',
+                      backgroundSize: '18px'
+                    }}
                   >
                     <option value="PENDING">Chờ xác nhận</option>
                     <option value="CONFIRMED">Đã xác nhận</option>
