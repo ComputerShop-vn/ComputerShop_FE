@@ -37,7 +37,7 @@ export interface OrderResponse {
   userId: number;
   username?: string;
   totalAmount: number;
-  status: string; // PENDING, CONFIRMED, DELIVERED, COMPLETED, CANCELLED, PAID, FAILED
+  status: string; // PENDING, CONFIRMED, PROCESSING, SHIPPED, DELIVERED, CANCELLED
   paymentType: string; // FULL, INSTALLMENT, COD (legacy FE field)
   paymentMethod?: string; // COD, VNPAY
   paymentMode?: string; // FULL, INSTALLMENT
@@ -66,5 +66,5 @@ export interface PlaceOrderRequest {
 }
 
 export interface UpdateOrderStatusRequest {
-  status: string; // PENDING, CONFIRMED, DELIVERED, COMPLETED, CANCELLED, PAID, FAILED
+  status: string; // PENDING, CONFIRMED, PROCESSING, SHIPPED, DELIVERED, CANCELLED
 }

@@ -6,28 +6,95 @@ import { OrderResponse } from '../../api/types/order';
 import Pagination from '../../components/ui/Pagination';
 import { showToast } from '../../components/ui/Toast';
 import { PagedResponse } from '../../api/types/common';
+import { 
+  ORDER_STATUS, 
+  ORDER_STATUS_LABELS, 
+  ORDER_STATUS_COLORS, 
+  getNextOrderStatuses,
+  type OrderStatus 
+} from '../../constants/orderStatus';
 
 const fmt = (v: number) => new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(v);
 const fmtDate = (d?: string) => d ? new Date(d).toLocaleString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '-';
 const PAGE_SIZE = 10;
 
 const STATUS_TABS = [
-  { key: 'ALL',        label: 'Tất cả' },
-  { key: 'PENDING',    label: 'Chờ xác nhận' },
-  { key: 'CONFIRMED',  label: 'Đã xác nhận' },
-  { key: 'PROCESSING', label: 'Đang xử lý' },
-  { key: 'DELIVERED',  label: 'Đang giao' },
-  { key: 'COMPLETED',  label: 'Hoàn thành' },
-  { key: 'CANCELLED',  label: 'Đã hủy' },
+  { key: 'ALL', label: 'Tất cả' },
+  { key: ORDER_STATUS.PENDING, label: ORDER_STATUS_LABELS[ORDER_STATUS.PENDING] },
+  { key: ORDER_STATUS.CONFIRMED, label: ORDER_STATUS_LABELS[ORDER_STATUS.CONFIRMED] },
+  { key: ORDER_STATUS.PROCESSING, label: ORDER_STATUS_LABELS[ORDER_STATUS.PROCESSING] },
+  { key: ORDER_STATUS.SHIPPED, label: ORDER_STATUS_LABELS[ORDER_STATUS.SHIPPED] },
+  { key: ORDER_STATUS.DELIVERED, label: ORDER_STATUS_LABELS[ORDER_STATUS.DELIVERED] },
+  { key: ORDER_STATUS.CANCELLED, label: ORDER_STATUS_LABELS[ORDER_STATUS.CANCELLED] },
 ] as const;
 
 const STATUS_CFG: Record<string, { label: string; color: string }> = {
-  PENDING:    { label: 'Chờ xác nhận', color: 'bg-orange-100 text-orange-600' },
-  CONFIRMED:  { label: 'Đã xác nhận',  color: 'bg-blue-100 text-blue-600' },
-  PROCESSING: { label: 'Đang xử lý',   color: 'bg-cyan-100 text-cyan-700' },
-  DELIVERED:  { label: 'Đang giao',    color: 'bg-indigo-100 text-indigo-600' },
-  COMPLETED:  { label: 'Hoàn thành',   color: 'bg-green-100 text-green-600' },
-  CANCELLED:  { label: 'Đã hủy',       color: 'bg-red-100 text-red-600' },
+  [ORDER_STATUS.PENDING]: { 
+    label: ORDER_STATUS_LABELS[ORDER_STATUS.PENDING], 
+    color: ORDER_STATUS_COLORS[ORDER_STATUS.PENDING] 
+  },
+  [ORDER_STATUS.CONFIRMED]: { 
+    label: ORDER_STATUS_LABELS[ORDER_STATUS.CONFIRMED], 
+    color: ORDER_STATUS_COLORS[ORDER_STATUS.CONFIRMED] 
+  },
+  [ORDER_STATUS.PROCESSING]: { 
+    label: ORDER_STATUS_LABELS[ORDER_STATUS.PROCESSING], 
+    color: ORDER_STATUS_COLORS[ORDER_STATUS.PROCESSING] 
+  },
+  [ORDER_STATUS.SHIPPED]: { 
+    label: ORDER_STATUS_LABELS[ORDER_STATUS.SHIPPED], 
+    color: ORDER_STATUS_COLORS[ORDER_STATUS.SHIPPED] 
+  },
+  [ORDER_STATUS.DELIVERED]: { 
+    label: ORDER_STATUS_LABELS[ORDER_STATUS.DELIVERED], 
+    color: ORDER_STATUS_COLORS[ORDER_STATUS.DELIVERED] 
+  },
+  [ORDER_STATUS.CANCELLED]: { 
+    label: ORDER_STATUS_LABELS[ORDER_STATUS.CANCELLED], 
+    color: ORDER_STATUS_COLORS[ORDER_STATUS.CANCELLED] 
+  },
+};
+
+// Thứ tự chuyển trạng thái: PENDING → CONFIRMED → PROCESSING → SHIPPED → DELIVERED
+// User và shop có thể hủy (CANCELLED) từ PENDING hoặc CONFIRMED
+// Một khi đã CANCELLED thì không thể chuyển sang trạng thái khác
+// Không thể quay lại trạng thái trước đó
+const STATUS_RANK: Record<string, number> = {
+  PENDING: 0, 
+  CONFIRMED: 1, 
+  PROCESSING: 2, 
+  SHIPPED: 3, 
+  DELIVERED: 4, 
+  CANCELLED: -1, // Terminal state
+};
+
+const getNextStatuses = (current: string): string[] => {
+  const rank = STATUS_RANK[current];
+  
+  // Terminal states - không thể chuyển sang trạng thái khác
+  if (rank === 4 || rank === -1) return []; // DELIVERED hoặc CANCELLED
+  
+  // Chỉ có thể tiến lên trạng thái tiếp theo, không thể quay lại
+  const nextStatuses: string[] = [];
+  
+  switch (current) {
+    case 'PENDING':
+      nextStatuses.push('CONFIRMED', 'CANCELLED');
+      break;
+    case 'CONFIRMED':
+      nextStatuses.push('PROCESSING', 'CANCELLED');
+      break;
+    case 'PROCESSING':
+      nextStatuses.push('SHIPPED');
+      break;
+    case 'SHIPPED':
+      nextStatuses.push('DELIVERED');
+      break;
+    default:
+      break;
+  }
+  
+  return nextStatuses;
 };
 
 const AdminOrders: React.FC = () => {
@@ -230,19 +297,26 @@ const AdminOrders: React.FC = () => {
                     </span>
                     <span className="text-xs text-gray-400">KH: {order.username || `ID ${order.userId}`}</span>
                   </div>
-                  <select
-                    value={order.status}
-                    onChange={e => updateStatus(order.orderId, e.target.value)}
-                    onClick={e => e.stopPropagation()}
-                    className="text-[10px] font-bold uppercase tracking-widest px-3 py-1.5 rounded-full border border-gray-200 bg-white outline-none focus:ring-1 focus:ring-green-400 cursor-pointer text-gray-600"
-                  >
-                    <option value="PENDING">Chờ xác nhận</option>
-                    <option value="CONFIRMED">Đã xác nhận</option>
-                    <option value="PROCESSING">Đang xử lý</option>
-                    <option value="DELIVERED">Đang giao</option>
-                    <option value="COMPLETED">Hoàn thành</option>
-                    <option value="CANCELLED">Đã hủy</option>
-                  </select>
+                  {(() => {
+                    const next = getNextOrderStatuses(order.status as OrderStatus);
+                    if (next.length === 0) return <span className="text-[9px] text-gray-300 uppercase tracking-widest">Đã hoàn tất</span>;
+                    return (
+                      <div className="flex gap-1 flex-wrap" onClick={e => e.stopPropagation()}>
+                        {next.map(s => {
+                          const cfg = STATUS_CFG[s] ?? { label: s, color: '' };
+                          const isDanger = s === ORDER_STATUS.CANCELLED;
+                          return (
+                            <button key={s}
+                              onClick={() => updateStatus(order.orderId, s)}
+                              className={`text-[9px] font-bold uppercase tracking-widest px-2.5 py-1.5 rounded-full border transition ${isDanger ? 'border-red-200 text-red-500 hover:bg-red-50' : 'border-gray-200 text-gray-600 hover:bg-gray-50 hover:border-gray-400'}`}
+                            >
+                              {cfg.label}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    );
+                  })()}
                 </div>
               </div>
             );
