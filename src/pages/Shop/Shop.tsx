@@ -207,7 +207,7 @@ const Shop: React.FC = () => {
           {/* Main */}
           <div className="flex-1">
             <div className="mb-6">
-              <h1 className="text-3xl font-light uppercase tracking-tight" style={{ color: '#f1f5f9' }}>
+              <h1 className="text-3xl font-light uppercase tracking-tight" style={{ color: '#000000' }}>
                 {activeCategoryName ? (<>Danh mục: <span className="font-bold" style={{ color: '#60a5fa' }}>{activeCategoryName}</span></>) :
                   searchFilter ? (<>Kết quả: <span className="font-bold" style={{ color: '#60a5fa' }}>"{searchFilter}"</span></>) :
                     (<>Tất cả <span className="font-bold" style={{ color: '#60a5fa' }}>Sản phẩm</span></>)}
