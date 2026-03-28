@@ -64,7 +64,7 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children, title, subtitle, ac
     return <Navigate to={location.pathname.replace('/admin', '/staff')} />;
   }
 
-  const staffNavItems = [
+  const baseNavItems = [
     { path: `${prefix}`, label: 'Tổng Quan', icon: 'dashboard' },
     {
       label: 'Kho Hàng', icon: 'inventory_2', group: true,
@@ -81,8 +81,12 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children, title, subtitle, ac
     { path: `${prefix}/installment-packages`, label: 'Gói Trả Góp', icon: 'credit_card' },
     { path: `${prefix}/warranties`, label: 'Bảo Hành', icon: 'verified_user' },
     { path: `${prefix}/reports`, label: 'Báo Cáo', icon: 'bar_chart' },
-    { path: `${prefix}/messages`, label: 'Tin Nhắn', icon: 'chat' },
   ] as const;
+
+  // Add Messages menu item only for staff role
+  const staffNavItems = user?.role === 'staff' 
+    ? [...baseNavItems, { path: `${prefix}/messages`, label: 'Tin Nhắn', icon: 'chat' }]
+    : baseNavItems;
 
   type NavItem = typeof staffNavItems[number];
 

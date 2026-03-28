@@ -6,6 +6,12 @@ import { warrantyService } from '../../api/services/warrantyService';
 import { OrderResponse } from '../../api/types/order';
 import { WarrantyResponse, WarrantyStatus } from '../../api/types/warranty';
 import { showToast } from '../../components/ui/Toast';
+import { 
+  ORDER_STATUS_LABELS, 
+  ORDER_STATUS_COLORS, 
+  getNextOrderStatuses,
+  type OrderStatus 
+} from '../../constants/orderStatus';
 
 const WARRANTY_STATUS: Record<WarrantyStatus, { label: string; color: string }> = {
   ACTIVE:  { label: 'Còn hiệu lực', color: 'text-green-700 bg-green-50 border-green-200' },
@@ -19,6 +25,10 @@ const CLAIM_STATUS: Record<string, { label: string; color: string }> = {
   COMPLETED:  { label: 'Hoàn thành', color: 'text-green-700 bg-green-50' },
   REJECTED:   { label: 'Từ chối',    color: 'text-red-600 bg-red-50' },
 };
+
+  const getStatusColor = (status: string) => {
+    return ORDER_STATUS_COLORS[status as OrderStatus] || 'bg-gray-100 text-gray-600';
+  };
 
 const OrderDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -62,17 +72,7 @@ const OrderDetail: React.FC = () => {
   };
 
   const getStatusColor = (status: string) => {
-    switch (status.toUpperCase()) {
-      case 'PENDING': return 'bg-orange-100 text-orange-600';
-      case 'CONFIRMED': return 'bg-blue-100 text-blue-600';
-      case 'PROCESSING': return 'bg-cyan-100 text-cyan-700';
-      case 'DELIVERED': return 'bg-indigo-100 text-indigo-600';
-      case 'COMPLETED': return 'bg-green-100 text-green-600';
-      case 'CANCELLED': return 'bg-red-100 text-red-600';
-      case 'PAID': return 'bg-emerald-100 text-emerald-600';
-      case 'FAILED': return 'bg-red-100 text-red-600';
-      default: return 'bg-gray-100 text-gray-600';
-    }
+    return ORDER_STATUS_COLORS[status as OrderStatus] || 'bg-gray-100 text-gray-600';
   };
 
   const getPaymentStatusColor = (status: string) => {
@@ -146,18 +146,33 @@ const OrderDetail: React.FC = () => {
           
           <div className="flex items-center gap-3">
             <span className="text-sm text-gray-500">Trạng thái:</span>
-            <select 
-              value={order.status}
-              onChange={(e) => updateStatus(e.target.value)}
-              className={`text-[9px] font-black uppercase tracking-widest px-3 py-2 rounded-full border-none focus:ring-2 focus:ring-blue-500 cursor-pointer ${getStatusColor(order.status)}`}
-            >
-              <option value="PENDING">Chờ xác nhận</option>
-              <option value="CONFIRMED">Đã xác nhận</option>
-              <option value="PROCESSING">Đang xử lý</option>
-              <option value="DELIVERED">Đang giao</option>
-              <option value="COMPLETED">Hoàn thành</option>
-              <option value="CANCELLED">Đã hủy</option>
-            </select>
+            {(() => {
+              const nextStatuses = getNextOrderStatuses(order.status as OrderStatus);
+              if (nextStatuses.length === 0) {
+                // Terminal state - chỉ hiển thị trạng thái hiện tại
+                return (
+                  <span className={`text-[9px] font-black uppercase tracking-widest px-3 py-2 rounded-full ${getStatusColor(order.status)}`}>
+                    {ORDER_STATUS_LABELS[order.status as OrderStatus] || order.status}
+                  </span>
+                );
+              }
+              
+              // Có thể chuyển trạng thái - hiển thị dropdown với trạng thái hiện tại + các trạng thái có thể chuyển
+              const availableStatuses = [order.status, ...nextStatuses];
+              return (
+                <select 
+                  value={order.status}
+                  onChange={(e) => updateStatus(e.target.value)}
+                  className={`text-[9px] font-black uppercase tracking-widest px-3 py-2 rounded-full border-none focus:ring-2 focus:ring-blue-500 cursor-pointer ${getStatusColor(order.status)}`}
+                >
+                  {availableStatuses.map(status => (
+                    <option key={status} value={status}>
+                      {ORDER_STATUS_LABELS[status as OrderStatus] || status}
+                    </option>
+                  ))}
+                </select>
+              );
+            })()}
           </div>
         </div>
 

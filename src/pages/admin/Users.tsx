@@ -192,15 +192,7 @@ const AdminUsers: React.FC = () => {
       title="Quản Lý Người Dùng" 
       subtitle={`Quản lý ${pagedData?.totalElements ?? users.length} tài khoản khách hàng và nhân viên hệ thống.`}
       requiredRole="admin"
-      actions={
-        <button 
-          onClick={() => setShowAddModal(true)}
-          className="bg-blue-600 text-white px-6 py-2.5 rounded-lg text-sm font-bold shadow-lg shadow-blue-600/20 hover:bg-blue-700 transition flex items-center"
-        >
-          <span className="material-symbols-outlined mr-2">person_add</span>
-          Thêm Người Dùng
-        </button>
-      }
+      
     >
       {loading && (
         <div className="flex items-center justify-center py-20">

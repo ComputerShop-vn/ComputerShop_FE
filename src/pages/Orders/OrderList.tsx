@@ -5,29 +5,53 @@ import { orderService } from '../../api/services/orderService';
 import { OrderResponse } from '../../api/types/order';
 import { PagedResponse } from '../../api/types/common';
 import Pagination from '../../components/ui/Pagination';
+import { 
+  ORDER_STATUS, 
+  ORDER_STATUS_LABELS, 
+  ORDER_STATUS_COLORS,
+  type OrderStatus 
+} from '../../constants/orderStatus';
 
 const fmt = (v: number) => new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(v);
 const fmtDate = (d?: string) => d ? new Date(d).toLocaleString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '-';
 const PAGE_SIZE = 10;
 
 const STATUS_TABS = [
-  { key: 'ALL',        label: 'Tất cả' },
-  { key: 'PENDING',    label: 'Chờ xác nhận' },
-  { key: 'CONFIRMED',  label: 'Đã xác nhận' },
-  { key: 'PROCESSING', label: 'Đang xử lý' },
-  { key: 'DELIVERED',  label: 'Đang giao' },
-  { key: 'COMPLETED',  label: 'Hoàn thành' },
-  { key: 'CANCELLED',  label: 'Đã hủy' },
+  { key: 'ALL', label: 'Tất cả' },
+  { key: ORDER_STATUS.PENDING, label: ORDER_STATUS_LABELS[ORDER_STATUS.PENDING] },
+  { key: ORDER_STATUS.CONFIRMED, label: ORDER_STATUS_LABELS[ORDER_STATUS.CONFIRMED] },
+  { key: ORDER_STATUS.PROCESSING, label: ORDER_STATUS_LABELS[ORDER_STATUS.PROCESSING] },
+  { key: ORDER_STATUS.SHIPPED, label: ORDER_STATUS_LABELS[ORDER_STATUS.SHIPPED] },
+  { key: ORDER_STATUS.DELIVERED, label: ORDER_STATUS_LABELS[ORDER_STATUS.DELIVERED] },
+  { key: ORDER_STATUS.CANCELLED, label: ORDER_STATUS_LABELS[ORDER_STATUS.CANCELLED] },
 ] as const;
 
 const STATUS_CFG: Record<string, { label: string; color: string }> = {
-  PENDING:    { label: 'Chờ xác nhận', color: 'bg-yellow-100 text-yellow-700' },
-  CONFIRMED:  { label: 'Đã xác nhận',  color: 'bg-blue-100 text-blue-700' },
-  PROCESSING: { label: 'Đang xử lý',   color: 'bg-cyan-100 text-cyan-700' },
-  DELIVERED:  { label: 'Đang giao',    color: 'bg-purple-100 text-purple-700' },
-  COMPLETED:  { label: 'Hoàn thành',   color: 'bg-green-100 text-green-700' },
-  CANCELLED:  { label: 'Đã hủy',       color: 'bg-red-100 text-red-700' },
-  PAID:       { label: 'Đã thanh toán',color: 'bg-emerald-100 text-emerald-700' },
+  [ORDER_STATUS.PENDING]: { 
+    label: ORDER_STATUS_LABELS[ORDER_STATUS.PENDING], 
+    color: 'bg-yellow-100 text-yellow-700' // Slightly different color for user interface
+  },
+  [ORDER_STATUS.CONFIRMED]: { 
+    label: ORDER_STATUS_LABELS[ORDER_STATUS.CONFIRMED], 
+    color: 'bg-blue-100 text-blue-700' 
+  },
+  [ORDER_STATUS.PROCESSING]: { 
+    label: ORDER_STATUS_LABELS[ORDER_STATUS.PROCESSING], 
+    color: 'bg-cyan-100 text-cyan-700' 
+  },
+  [ORDER_STATUS.SHIPPED]: { 
+    label: ORDER_STATUS_LABELS[ORDER_STATUS.SHIPPED], 
+    color: 'bg-indigo-100 text-indigo-700' 
+  },
+  [ORDER_STATUS.DELIVERED]: { 
+    label: ORDER_STATUS_LABELS[ORDER_STATUS.DELIVERED], 
+    color: 'bg-green-100 text-green-700' 
+  },
+  [ORDER_STATUS.CANCELLED]: { 
+    label: ORDER_STATUS_LABELS[ORDER_STATUS.CANCELLED], 
+    color: 'bg-red-100 text-red-700' 
+  },
+  PAID: { label: 'Đã thanh toán', color: 'bg-emerald-100 text-emerald-700' },
 };
 
 const OrderList: React.FC = () => {
