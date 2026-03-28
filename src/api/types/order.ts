@@ -30,6 +30,7 @@ export interface PaymentScheduleResponse {
   status: string; // PENDING, UNPAID, PAID, OVERDUE
   paidDate?: string;
   vnpTransactionNo?: string;
+  penaltyAmount?: number; // Tiền phạt khi quá hạn
 }
 
 export interface OrderResponse {

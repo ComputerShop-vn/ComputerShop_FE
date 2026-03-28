@@ -226,6 +226,10 @@ const OrderDetail: React.FC = () => {
                   const nextPid = nextUnpaid?.paymentScheduleId ?? nextUnpaid?.scheduleId;
                   const isNext = pid === nextPid;
                   const isOverdue = p.status === 'OVERDUE';
+                  // Hiển thị penalty cho cả OVERDUE và PAID nếu có penalty amount
+                  const hasPenalty = p.penaltyAmount && p.penaltyAmount > 0;
+                  const totalAmount = p.amount + (hasPenalty ? p.penaltyAmount : 0);
+                  
                   return (
                     <div key={p.paymentScheduleId ?? p.scheduleId ?? idx} className={`flex items-center justify-between text-sm p-3 rounded-xl ${isNext ? 'bg-amber-50 border border-amber-100' : 'bg-gray-50'}`}>
                       <div className="flex items-center gap-3">
@@ -237,10 +241,24 @@ const OrderDetail: React.FC = () => {
                             {idx === 0 ? 'Trả trước' : `Kỳ ${idx}`} — {new Date(p.dueDate).toLocaleDateString('vi-VN')}
                           </p>
                           {p.paidDate && <p className="text-[10px] text-gray-400">Đã trả: {new Date(p.paidDate).toLocaleDateString('vi-VN')}</p>}
+                          {hasPenalty && (
+                            <p className="text-[10px] text-red-500 font-medium">
+                              + Phí phạt: {fmt(p.penaltyAmount)}
+                            </p>
+                          )}
                         </div>
                       </div>
                       <div className="flex items-center gap-2">
-                        <p className="font-bold text-sm">{fmt(p.amount)}</p>
+                        <div className="text-right">
+                          {hasPenalty ? (
+                            <>
+                              <p className={`font-bold text-sm ${isPaid ? 'text-green-600' : 'text-red-600'}`}>{fmt(totalAmount)}</p>
+                              <p className="text-[10px] text-gray-400 line-through">{fmt(p.amount)}</p>
+                            </>
+                          ) : (
+                            <p className="font-bold text-sm">{fmt(p.amount)}</p>
+                          )}
+                        </div>
                         <span className={`px-2 py-0.5 rounded-full text-[9px] font-bold uppercase ${
                           isPaid ? 'bg-green-100 text-green-700' :
                           isOverdue ? 'bg-red-100 text-red-700' :
@@ -400,7 +418,25 @@ const OrderDetail: React.FC = () => {
           {hasUnpaidInstallment && (
             <div className="bg-amber-50 border border-amber-200 rounded-2xl p-5">
               <p className="text-[10px] font-bold uppercase tracking-widest text-amber-600 mb-1">Kỳ thanh toán tiếp theo</p>
-              <p className="text-2xl font-black text-amber-700 mb-3">{fmt(nextUnpaid!.amount)}</p>
+              {(() => {
+                const isOverdue = nextUnpaid!.status === 'OVERDUE';
+                const hasPenalty = isOverdue && nextUnpaid!.penaltyAmount && nextUnpaid!.penaltyAmount > 0;
+                const totalAmount = nextUnpaid!.amount + (hasPenalty ? nextUnpaid!.penaltyAmount : 0);
+                
+                return (
+                  <>
+                    {hasPenalty ? (
+                      <div className="mb-3">
+                        <p className="text-2xl font-black text-red-600 mb-1">{fmt(totalAmount)}</p>
+                        <p className="text-sm text-amber-600 line-through">{fmt(nextUnpaid!.amount)}</p>
+                        <p className="text-xs text-red-500 font-medium">+ Phí phạt: {fmt(nextUnpaid!.penaltyAmount)}</p>
+                      </div>
+                    ) : (
+                      <p className="text-2xl font-black text-amber-700 mb-3">{fmt(nextUnpaid!.amount)}</p>
+                    )}
+                  </>
+                );
+              })()}
               <p className="text-xs text-amber-600 mb-4">Hạn: {new Date(nextUnpaid!.dueDate).toLocaleDateString('vi-VN')}</p>
               <button
                 onClick={handlePayNextInstallment}

@@ -316,19 +316,37 @@ const OrderDetail: React.FC = () => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-50">
-                {order.payments.map((payment, index) => (
-                  <tr key={payment.scheduleId} className="hover:bg-gray-50/50">
-                    <td className="p-4 text-sm font-bold text-gray-900">Kỳ {index + 1}</td>
-                    <td className="p-4 text-sm text-gray-600">{formatDate(payment.dueDate)}</td>
-                    <td className="p-4 text-sm font-black text-gray-900 text-right">{formatCurrency(payment.amount)}</td>
-                    <td className="p-4">
-                      <span className={`text-[9px] font-black uppercase tracking-widest px-2 py-1 rounded-full ${getPaymentStatusColor(payment.status)}`}>
-                        {getPaymentStatusLabel(payment.status)}
-                      </span>
-                    </td>
-                    <td className="p-4 text-sm text-gray-600">{formatDate(payment.paidDate)}</td>
-                  </tr>
-                ))}
+                {order.payments.map((payment, index) => {
+                  const isOverdue = payment.status === 'OVERDUE';
+                  const isPaid = payment.status === 'PAID';
+                  // Hiển thị penalty cho cả OVERDUE và PAID nếu có penalty amount
+                  const hasPenalty = payment.penaltyAmount && payment.penaltyAmount > 0;
+                  const totalAmount = payment.amount + (hasPenalty ? payment.penaltyAmount : 0);
+                  
+                  return (
+                    <tr key={payment.scheduleId} className="hover:bg-gray-50/50">
+                      <td className="p-4 text-sm font-bold text-gray-900">Kỳ {index + 1}</td>
+                      <td className="p-4 text-sm text-gray-600">{formatDate(payment.dueDate)}</td>
+                      <td className="p-4 text-right">
+                        {hasPenalty ? (
+                          <div className="space-y-1">
+                            <p className={`text-sm font-black ${isPaid ? 'text-green-600' : 'text-red-600'}`}>{formatCurrency(totalAmount)}</p>
+                            <p className="text-xs text-gray-400 line-through">{formatCurrency(payment.amount)}</p>
+                            <p className="text-[10px] text-red-500 font-medium">+ Phí phạt: {formatCurrency(payment.penaltyAmount)}</p>
+                          </div>
+                        ) : (
+                          <p className="text-sm font-black text-gray-900">{formatCurrency(payment.amount)}</p>
+                        )}
+                      </td>
+                      <td className="p-4">
+                        <span className={`text-[9px] font-black uppercase tracking-widest px-2 py-1 rounded-full ${getPaymentStatusColor(payment.status)}`}>
+                          {getPaymentStatusLabel(payment.status)}
+                        </span>
+                      </td>
+                      <td className="p-4 text-sm text-gray-600">{formatDate(payment.paidDate)}</td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
