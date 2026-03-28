@@ -9,9 +9,7 @@ import { PagedResponse } from '../../api/types/common';
 import { 
   ORDER_STATUS, 
   ORDER_STATUS_LABELS, 
-  ORDER_STATUS_COLORS, 
-  getNextOrderStatuses,
-  type OrderStatus 
+  ORDER_STATUS_COLORS
 } from '../../constants/orderStatus';
 
 const fmt = (v: number) => new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(v);
@@ -298,25 +296,38 @@ const AdminOrders: React.FC = () => {
                     <span className="text-xs text-gray-400">KH: {order.username || `ID ${order.userId}`}</span>
                   </div>
                   
-                  <select
-                    value={order.status}
-                    onChange={e => updateStatus(order.orderId, e.target.value)}
-                    onClick={e => e.stopPropagation()}
-                    className="relative z-50 text-[10px] font-bold uppercase tracking-widest px-3 pr-8 py-1.5 rounded-full border border-gray-200 bg-white outline-none focus:ring-1 focus:ring-green-400 cursor-pointer text-gray-600 appearance-none"
-                    style={{
-                      backgroundImage: `url('data:image/svg+xml;utf8,<svg fill="rgb(75 85 99)" height="24" viewBox="0 0 24 24" width="24" xmlns="http://www.w3.org/2000/svg"><path d="M7 10l5 5 5-5z"/></svg>')`,
-                      backgroundRepeat: 'no-repeat',
-                      backgroundPosition: 'right 4px center',
-                      backgroundSize: '18px'
-                    }}
-                  >
-                    <option value="PENDING">Chờ xác nhận</option>
-                    <option value="CONFIRMED">Đã xác nhận</option>
-                    <option value="PROCESSING">Đang xử lý</option>
-                    <option value="SHIPPED">Đang giao</option>
-                    <option value="DELIVERED">Hoàn thành</option>
-                    <option value="CANCELLED">Đã hủy</option>
-                  </select>
+                  {(() => {
+                    const nextStatuses = getNextStatuses(order.status);
+                    const hasNextStatuses = nextStatuses.length > 0;
+                    
+                    return hasNextStatuses ? (
+                      <select
+                        value={order.status}
+                        onChange={e => updateStatus(order.orderId, e.target.value)}
+                        onClick={e => e.stopPropagation()}
+                        className="relative z-50 text-[10px] font-bold uppercase tracking-widest px-3 pr-8 py-1.5 rounded-full border border-gray-200 bg-white outline-none focus:ring-1 focus:ring-green-400 cursor-pointer text-gray-600 appearance-none"
+                        style={{
+                          backgroundImage: `url('data:image/svg+xml;utf8,<svg fill="rgb(75 85 99)" height="24" viewBox="0 0 24 24" width="24" xmlns="http://www.w3.org/2000/svg"><path d="M7 10l5 5 5-5z"/></svg>')`,
+                          backgroundRepeat: 'no-repeat',
+                          backgroundPosition: 'right 4px center',
+                          backgroundSize: '18px'
+                        }}
+                      >
+                        {/* Current status */}
+                        <option value={order.status}>{STATUS_CFG[order.status]?.label || order.status}</option>
+                        {/* Available next statuses */}
+                        {nextStatuses.map(status => (
+                          <option key={status} value={status}>
+                            → {STATUS_CFG[status]?.label || status}
+                          </option>
+                        ))}
+                      </select>
+                    ) : (
+                      <span className={`text-[10px] font-bold uppercase tracking-widest px-3 py-1.5 rounded-full ${STATUS_CFG[order.status]?.color || 'bg-gray-100 text-gray-500'}`}>
+                        {STATUS_CFG[order.status]?.label || order.status}
+                      </span>
+                    );
+                  })()}
                 </div>
               </div>
             );
