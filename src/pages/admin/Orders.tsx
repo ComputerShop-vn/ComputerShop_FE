@@ -297,26 +297,26 @@ const AdminOrders: React.FC = () => {
                     </span>
                     <span className="text-xs text-gray-400">KH: {order.username || `ID ${order.userId}`}</span>
                   </div>
-                  {(() => {
-                    const next = getNextOrderStatuses(order.status as OrderStatus);
-                    if (next.length === 0) return <span className="text-[9px] text-gray-300 uppercase tracking-widest">Đã hoàn tất</span>;
-                    return (
-                      <div className="flex gap-1 flex-wrap" onClick={e => e.stopPropagation()}>
-                        {next.map(s => {
-                          const cfg = STATUS_CFG[s] ?? { label: s, color: '' };
-                          const isDanger = s === ORDER_STATUS.CANCELLED;
-                          return (
-                            <button key={s}
-                              onClick={() => updateStatus(order.orderId, s)}
-                              className={`text-[9px] font-bold uppercase tracking-widest px-2.5 py-1.5 rounded-full border transition ${isDanger ? 'border-red-200 text-red-500 hover:bg-red-50' : 'border-gray-200 text-gray-600 hover:bg-gray-50 hover:border-gray-400'}`}
-                            >
-                              {cfg.label}
-                            </button>
-                          );
-                        })}
-                      </div>
-                    );
-                  })()}
+                  
+                  <select
+                    value={order.status}
+                    onChange={e => updateStatus(order.orderId, e.target.value)}
+                    onClick={e => e.stopPropagation()}
+                    className="relative z-50 text-[10px] font-bold uppercase tracking-widest px-3 pr-8 py-1.5 rounded-full border border-gray-200 bg-white outline-none focus:ring-1 focus:ring-green-400 cursor-pointer text-gray-600 appearance-none"
+                    style={{
+                      backgroundImage: `url('data:image/svg+xml;utf8,<svg fill="rgb(75 85 99)" height="24" viewBox="0 0 24 24" width="24" xmlns="http://www.w3.org/2000/svg"><path d="M7 10l5 5 5-5z"/></svg>')`,
+                      backgroundRepeat: 'no-repeat',
+                      backgroundPosition: 'right 4px center',
+                      backgroundSize: '18px'
+                    }}
+                  >
+                    <option value="PENDING">Chờ xác nhận</option>
+                    <option value="CONFIRMED">Đã xác nhận</option>
+                    <option value="PROCESSING">Đang xử lý</option>
+                    <option value="SHIPPED">Đang giao</option>
+                    <option value="DELIVERED">Hoàn thành</option>
+                    <option value="CANCELLED">Đã hủy</option>
+                  </select>
                 </div>
               </div>
             );
